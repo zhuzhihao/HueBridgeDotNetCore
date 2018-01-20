@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/HueBridge/v15
+/HueBridge/bin/Debug/netcoreapp1.1
+/HueBridge/obj
+*.user
