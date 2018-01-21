@@ -11,11 +11,26 @@ namespace HueBridge.Controllers
     [Route("api/{user?}/config")]
     public class ConfigController : Controller
     {
+        private IGlobalResourceProvider _grp;
+
+        public ConfigController(IGlobalResourceProvider grp)
+        {
+            _grp = grp;
+        }
+
         [HttpGet]
-        public Models.Config Get(string user)
+        public JsonResult Get(string user)
         {
             var config = new Models.Config();
-            return config;
+
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
+
+
+            return Json(config);
         }
     }
 }
