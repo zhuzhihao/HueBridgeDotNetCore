@@ -28,8 +28,6 @@ namespace HueBridge.Controllers
             {
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
-
-
             return Json(config);
         }
     }

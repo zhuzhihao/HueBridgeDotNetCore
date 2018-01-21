@@ -28,7 +28,9 @@ namespace HueBridge
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IGlobalResourceProvider>(new GlobalResourceProvider());
+            services.Configure<AppOptions>(Configuration);
+            services.AddSingleton<Utilities.IScanner, Utilities.ESP8266LightScanner>();
+            services.AddSingleton<IGlobalResourceProvider, GlobalResourceProvider>();
             // Add framework services
             services.AddMvc()
                 .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() });

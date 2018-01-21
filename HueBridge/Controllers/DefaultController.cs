@@ -23,25 +23,25 @@ namespace HueBridge.Controllers.Default
         public IEnumerable<Result> Post([FromBody] Device content)
         {
             Result ret = new Result();
-            if (content.devicetype.Length > 0)
+            if (content.Devicetype.Length > 0)
             {
                 // check for existing user in database
                 var db = _grp.DatabaseInstance;
                 var users = db.GetCollection<Models.User>("users");
-                var res = users.Find(x => x.Name.Equals(content.devicetype));
+                var res = users.Find(x => x.Name.Equals(content.Devicetype));
                 if (res.Count() > 0)
                 {
-                    ret.success.username = res.First().Id;
+                    ret.Success.Username = res.First().Id;
                 }
                 else
                 {
                     // create new user
                     var user = new Models.User();
                     user.CreateDate = DateTime.Now;
-                    user.Name = content.devicetype;
+                    user.Name = content.Devicetype;
                     user.Id = Guid.NewGuid().ToString().Replace("-", "");
                     users.Insert(user);
-                    ret.success.username = user.Id;
+                    ret.Success.Username = user.Id;
                 }
             }
 
@@ -55,17 +55,17 @@ namespace HueBridge.Controllers.Default
 
     public class Device
     {
-        public string devicetype { get; set; }
+        public string Devicetype { get; set; }
     }
 
     public class Result
     {
-        public User success { get; set; } = new User();
+        public User Success { get; set; } = new User();
     }
 
     public class User
     {
-        public string username { get; set; }
+        public string Username { get; set; }
     }
 
 }
