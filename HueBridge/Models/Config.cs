@@ -6,8 +6,8 @@ namespace HueBridge.Models
 {
     public class Config
     {
-        public string Name { get; set; } = Environment.MachineName; // Name of the bridge. This is also its uPnP name, so will reflect the actual uPnP name after any conflicts have been resolved.
-        public int ZigbeeChannel { get; set; } = 15;                // The current wireless frequency channel used by the bridge. It can take values of 11, 15, 20,25 or 0 if undefined (factory new).
+        public string Name { get; set; }            // Name of the bridge. This is also its uPnP name, so will reflect the actual uPnP name after any conflicts have been resolved.
+        public int ZigbeeChannel { get; set; } = 15;// The current wireless frequency channel used by the bridge. It can take values of 11, 15, 20,25 or 0 if undefined (factory new).
         public string MAC { get; set; }
         public bool DHCP { get; set; } = true;
         public string IPAddress { get; set; }

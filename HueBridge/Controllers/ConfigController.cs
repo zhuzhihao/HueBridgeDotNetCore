@@ -96,5 +96,38 @@ namespace HueBridge.Controllers
 
             return Json(config);
         }
+
+        [Route("whitelist/{user2}")]
+        [HttpDelete]
+        public JsonResult Delete(string user, string user2)
+        {
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
+            var ret = new object[1];
+
+            var users = _grp.DatabaseInstance.GetCollection<Models.User>("users");
+            var nrOfDeletedUser = users.Delete(u => u.Id == user2);
+            if (nrOfDeletedUser == 0)
+            {
+
+                ret[0] = new
+                {
+                    failure = $"user {user2} not found"
+                };
+                return Json(ret);
+            }
+            else
+            {
+                _grp.AuthenticatorInstance.RemoveUserFromCache(user2);
+                ret[0] = new
+                {
+                    success = $"/config/whitelist/{user2} deleted."
+                };
+            }
+            return Json(ret);
+        }
     }
 }
