@@ -16,19 +16,23 @@ namespace HueBridge.Utilities
             _db = db;
         }
 
-        public bool IsValidUser(string id)
+        public bool IsValidUser(string username)
         {
             // check cache
-            if (!_cachedUsers.Contains(id))
+            if (!_cachedUsers.Contains(username))
             {
                 // check db
                 var users = _db.GetCollection<Models.User>("users");
-                if (users.FindOne(x => x.Id.Equals(id)) == null)
+                var user = users.FindOne(x => x.Id.Equals(username));
+                if (user == null)
                 {
                     return false;
                 }
                 // add to cache
-                _cachedUsers.Add(id);
+                _cachedUsers.Add(username);
+                // update last used date
+                user.LastUsedDate = DateTime.Now;
+                users.Update(user);
             }
 
             return true;
@@ -52,7 +56,7 @@ namespace HueBridge.Utilities
 
         public void RemoveUserFromCache(string id)
         {
-            _cachedUsers.RemoveAll(new Predicate<string>(x => x == id));
+            _cachedUsers.RemoveAll(x => (x == id));
         }
     }
 }
