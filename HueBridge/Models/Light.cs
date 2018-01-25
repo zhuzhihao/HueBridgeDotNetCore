@@ -12,6 +12,10 @@ namespace HueBridge.Models
         [JsonIgnore]
         [BsonId]
         public int Id { get; set; }
+        [JsonIgnore]
+        public DateTime CreateDate { get; set; }
+        [JsonIgnore]
+        public string IPAddress { get; set; }
         public LightState State { get; set; } = new LightState();
         public string Type { get; set; }        // A fixed name describing the type of light e.g. “Extended color light”.
         public string Name { get; set; }        // A unique, editable name given to the light.

@@ -82,6 +82,8 @@ namespace HueBridge.Utilities
                             // found a new light
                             var newLight = new Models.Light()
                             {
+                                CreateDate = DateTime.Now,
+                                IPAddress = ip,
                                 Type = "Extended color light",
                                 Name = $"{r.modelid}",
                                 ModelId = r.modelid,
@@ -96,6 +98,7 @@ namespace HueBridge.Utilities
                                 SWVersion = "66010400",
                                 State = new Models.LightState
                                 {
+                                    ColorMode = "xy",
                                     Reachable = true
                                 }
                             };
@@ -104,6 +107,8 @@ namespace HueBridge.Utilities
                             {
                                 lights.EnsureIndex(x => x.UniqueId, true);
                                 lights.Insert(newLight);
+                                newLight.Name = $"{newLight.ModelId} {newLight.Id}";
+                                lights.Update(newLight);
                             }
                             catch (LiteDB.LiteException ex)
                             {
@@ -125,7 +130,7 @@ namespace HueBridge.Utilities
             // first check how many devices alive in local network
             var portScanTasks = deviceList.Select(dev => TestHttpPort(dev))
                                              .ToArray();
-            Task.WaitAll(portScanTasks, 150); // wait maximum 150ms
+            Task.WaitAll(portScanTasks, 200); // wait maximum 200ms
 
             var checkLightTasks = _devicesAlive.Select(dev => CheckAndAddLights(dev))
                                                .ToArray();
