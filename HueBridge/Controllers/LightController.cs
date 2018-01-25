@@ -11,11 +11,11 @@ namespace HueBridge.Controllers
 
     [Produces("application/json")]
     [Route("api/{user?}/lights")]
-    public class LightsController : Controller
+    public class LightController : Controller
     {
         private IGlobalResourceProvider _grp;
 
-        public LightsController(
+        public LightController(
             IGlobalResourceProvider grp)
         {
             _grp = grp;
