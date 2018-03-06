@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace HueBridge.Controllers.Default
 {
+
     [Produces("application/json")]
-    [Route("api")]
     public class DefaultController : Controller
     {
         private IGlobalResourceProvider _grp;
@@ -19,6 +21,7 @@ namespace HueBridge.Controllers.Default
         }
 
         // POST: api
+        [Route("api")]
         [HttpPost]
         public IEnumerable<Result> Post([FromBody] Device content)
         {
@@ -50,6 +53,56 @@ namespace HueBridge.Controllers.Default
             {
                 ret
             };
+        }
+
+        [Route("api/{user?}")]
+        [HttpGet]
+        public async Task<JsonResult> GetAllStatus(string user)
+        {
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response;
+            client.Timeout = TimeSpan.FromMilliseconds(1000);
+
+            var ret = new Dictionary<string, object>();
+
+            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights_dict = new Dictionary<string, Models.Light>();
+            foreach (var l in lights.FindAll())
+            {
+                lights_dict[l.Id.ToString()] = l;
+            }
+
+            var groups_dict = new Dictionary<string, string>();
+
+            object config_dict = new Dictionary<string, string>();
+            var config_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/config";
+            try
+            {
+                response = await client.GetAsync(config_request_url);
+                if (response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    config_dict = JsonConvert.DeserializeObject(body);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // request time out
+            }
+
+            var schedules_dict = new Dictionary<string, string>();
+
+            ret["lights"] = lights_dict;
+            ret["groups"] = groups_dict;
+            ret["config"] = config_dict;
+            ret["schedules"] = schedules_dict;
+
+            return Json(ret);
         }
     }
 

@@ -59,4 +59,13 @@ namespace HueBridge.Utilities
             _cachedUsers.RemoveAll(x => (x == id));
         }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    public class RequireAuthenticationAttribute : Attribute
+    {
+        public RequireAuthenticationAttribute()
+        {
+            Console.WriteLine("NeedAuthenticationAttribute");
+        }
+    }
 }

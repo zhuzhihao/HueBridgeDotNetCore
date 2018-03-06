@@ -27,11 +27,6 @@ namespace HueBridge.Controllers
         [HttpGet]
         public JsonResult Get(string user)
         {
-            // authentication
-            if (!_grp.AuthenticatorInstance.IsValidUser(user))
-            {
-                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
-            }
             var config = new Models.Config();
 
             var interfaces = NetworkInterface.GetAllNetworkInterfaces();
@@ -48,7 +43,15 @@ namespace HueBridge.Controllers
                 }
                 if (found)
                 {
-                    config.DHCP = i.GetIPProperties().GetIPv4Properties().IsDhcpEnabled;
+                    try
+                    {
+                        config.DHCP = i.GetIPProperties().GetIPv4Properties().IsDhcpEnabled;
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        config.DHCP = true;
+                    }
+
                     config.MAC = string.Join(":", i.GetPhysicalAddress().GetAddressBytes().Select(x => BitConverter.ToString(new byte[] {x})));
                     config.IPAddress = _option.Value.NetworkInterface;
                     config.NetMask = i.GetIPProperties().UnicastAddresses.Where(x => (x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &&
@@ -58,7 +61,7 @@ namespace HueBridge.Controllers
                                                                          .ToString();
                     try
                     {
-                        config.Gateway = i.GetIPProperties().GatewayAddresses?[0].ToString();
+                        config.Gateway = i.GetIPProperties().GatewayAddresses?[0].Address.ToString();
                     }
                     catch (ArgumentOutOfRangeException)
                     {
@@ -76,16 +79,20 @@ namespace HueBridge.Controllers
             config.LocalTime = DateTime.Now.ToString();
             config.TimeZone = TimeZoneInfo.Local.ToString();
 
-            var users = _grp.DatabaseInstance.GetCollection<Models.User>("users");
-            config.WhiteList = new Dictionary<string, Models.WhiteListItem>();
-            foreach (var u in users.FindAll())
+            // authentication
+            if (_grp.AuthenticatorInstance.IsValidUser(user))
             {
-                config.WhiteList[u.Id] = new Models.WhiteListItem
+                var users = _grp.DatabaseInstance.GetCollection<Models.User>("users");
+                config.WhiteList = new Dictionary<string, Models.WhiteListItem>();
+                foreach (var u in users.FindAll())
                 {
-                    LastUsedDate = u.LastUsedDate.ToString(),
-                    CreateDate = u.CreateDate.ToString(),
-                    Name = u.Name
-                };
+                    config.WhiteList[u.Id] = new Models.WhiteListItem
+                    {
+                        LastUsedDate = u.LastUsedDate.ToString(),
+                        CreateDate = u.CreateDate.ToString(),
+                        Name = u.Name
+                    };
+                }
             }
             config.SWVersion = "1.0.0 revision 2";
             config.APIVersion = "1.19.0";

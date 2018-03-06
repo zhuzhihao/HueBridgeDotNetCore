@@ -55,10 +55,23 @@ namespace HueBridge.Utilities
 
         private async Task CheckAndAddLights(string ip)
         {
+            Console.WriteLine($"Checking {ip}");
+
             var url = $"http://{ip}/detect";
             HttpClient client = new HttpClient();
-            client.Timeout = TimeSpan.FromMilliseconds(500);
-            var response = await client.GetAsync(url);
+            HttpResponseMessage response;
+            client.Timeout = TimeSpan.FromMilliseconds(1000);
+
+            try
+            {
+                response = await client.GetAsync(url);
+            }
+            catch (TaskCanceledException)
+            {
+                // request time out
+                return;
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync();
@@ -134,8 +147,14 @@ namespace HueBridge.Utilities
 
             var checkLightTasks = _devicesAlive.Select(dev => CheckAndAddLights(dev))
                                                .ToArray();
-            await Task.WhenAll(checkLightTasks);
-
+            try
+            {
+                await Task.WhenAll(checkLightTasks);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
             _state = ScannerState.IDLE;
         }
 
