@@ -124,6 +124,38 @@ namespace HueBridge.Controllers
                 }
             });
         }
+
+        [Route("{id}")]
+        [HttpDelete]
+        public JsonResult DeleteGroup(string user, string id)
+        {
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
+            var ret = new object[1];
+
+            var groups = _grp.DatabaseInstance.GetCollection<Models.Group>("groups");
+            var nrOfDeletedGroups = groups.Delete(g => g.Id.ToString() == id);
+            if (nrOfDeletedGroups == 0)
+            {
+
+                ret[0] = new
+                {
+                    failure = $"group {id} not found"
+                };
+                return Json(ret);
+            }
+            else
+            {
+                ret[0] = new
+                {
+                    success = $"/groups/{id} deleted."
+                };
+            }
+            return Json(ret);
+        }
     }
 
     public class CreateGroupRequest
