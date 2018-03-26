@@ -8,3 +8,6 @@
 *.user
 /HueBridge/ScaffoldingReadMe.txt
 *.db
+/HueBridge/bin/Debug/netcoreapp2.0
+/HueBridge/.vs
+/.vs/config
