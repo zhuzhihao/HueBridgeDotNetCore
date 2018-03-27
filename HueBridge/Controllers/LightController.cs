@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace HueBridge.Controllers
 {
@@ -191,10 +192,118 @@ namespace HueBridge.Controllers
             return Json(ret);
         }
         #endregion
+
+        [Route("{id}/state")]
+        public JsonResult SetLightState(string user, string id, [FromBody]SetLightStateRequest newState)
+        {
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
+
+            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var light = lights.FindById(Convert.ToInt64(id));
+            if (light == null)
+            {
+                return Json(new
+                {
+                    failure = $"light {id} not found"
+                });
+            }
+            var prevState = JsonConvert.SerializeObject(light.State);
+            var pp = typeof(Models.LightState).GetProperties().ToList();
+            var ret = new List<Dictionary<string, object>>();
+            var colormode = "";
+
+            foreach (var p in typeof(SetLightStateRequest).GetProperties())
+            {
+                var pv = p.GetValue(newState, null);
+                if (pv != null)
+                {
+                    if (p.Name.EndsWith("_inc"))
+                    {
+                        var pName = p.Name.Replace("_inc", "");
+                        var ppOrgValue = pp.Find(x => x.Name == pName).GetValue(light.State, null);
+                        if (ppOrgValue != null)
+                        {
+                            pp.Find(x => x.Name == pName).SetValue(light.State, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
+                        }
+                        
+                        ret.Add(new Dictionary<string, object>
+                        {
+                            ["success"] = new Dictionary<string, object>
+                            {
+                                [$"/lights/{id}/state/{pName.ToLower()}"] = Convert.ToUInt32((uint)ppOrgValue + (int)pv)
+                            }
+                        });
+                    }
+                    else
+                    {
+                        pp.Find(x => x.Name == p.Name).SetValue(light.State, pv);
+                        ret.Add(new Dictionary<string, object>
+                        {
+                            ["success"] = new Dictionary<string, object>
+                            {
+                                [$"/lights/{id}/state/{p.Name.ToLower()}"] = pv
+                            }
+                        });
+                    }
+
+
+                    
+                    // colormode priority system: xy > ct > hs
+                    switch (p.Name)
+                    {
+                        case nameof(SetLightStateRequest.Hue):
+                        case nameof(SetLightStateRequest.Hue_inc):
+                        case nameof(SetLightStateRequest.Sat):
+                        case nameof(SetLightStateRequest.Sat_inc):
+                            colormode = colormode == "" ? "hs" : colormode;
+                            break;
+                        case nameof(SetLightStateRequest.XY):
+                        case nameof(SetLightStateRequest.XY_inc):
+                            colormode = "xy";
+                            break;
+                        case nameof(SetLightStateRequest.CT):
+                        case nameof(SetLightStateRequest.CT_inc):
+                            colormode = colormode != "xy" ? "ct" : colormode;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            if (colormode != "")
+            {
+                light.State.ColorMode = colormode;
+            }
+            lights.Update(light);
+
+            return Json(ret);
+        }
     }
 
     public class ChangeNameRequest
     {
         public string Name { get; set; }
+    }
+
+    public class SetLightStateRequest
+    {
+        public bool? On { get; set; }
+        public uint? Bri { get; set; }
+        public uint? Hue { get; set; }
+        public uint? Sat { get; set; }
+        public List<float> XY { get; set; }
+        public uint? CT { get; set; }
+        public string Alert { get; set; }
+        public string Effect { get; set; }
+        public int? TransitionTime { get; set; }
+        public int? Bri_inc { get; set; }
+        public int? Sat_inc { get; set; }
+        public int? Hue_inc { get; set; }
+        public int? CT_inc { get; set; }
+        public List<float> XY_inc { get; set; }
     }
 }

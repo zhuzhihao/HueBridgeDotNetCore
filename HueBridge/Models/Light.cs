@@ -35,7 +35,7 @@ namespace HueBridge.Models
         public uint Bri { get; set; }           // Brightness of the light. This is a scale from the minimum brightness the light is capable of, 1, to the maximum capable brightness, 254.
         public uint Hue { get; set; }           // Hue of the light. This is a wrapping value between 0 and 65535. Both 0 and 65535 are red, 25500 is green and 46920 is blue.
         public uint Sat { get; set; }           // Saturation of the light. 254 is the most saturated (colored) and 0 is the least saturated (white).
-        public float[] XY { get; set; } = new float[] { 0.0f, 0.0f }; 
+        public List<float> XY { get; set; } = new List<float> { 0.0f, 0.0f }; 
                                                 // The x and y coordinates of a color in CIE color space.
         public uint CT { get; set; }            // The Mired Color temperature of the light. 2012 connected lights are capable of 153 (6500K) to 500 (2000K).
         public string Alert { get; set; } = "none";
