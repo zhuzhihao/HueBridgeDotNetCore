@@ -136,5 +136,14 @@ namespace HueBridge.Controllers
             }
             return Json(ret);
         }
+
+        [HttpPut]
+        public JsonResult ModifyConfig(string user)
+        {
+            var buffer = new byte[1024];
+            var body =  Request.Body.Read(buffer, 0, 1024);
+
+            return Json("");
+        }
     }
 }

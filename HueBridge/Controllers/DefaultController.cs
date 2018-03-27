@@ -66,7 +66,7 @@ namespace HueBridge.Controllers.Default
             }
             HttpClient client = new HttpClient();
             HttpResponseMessage response;
-            client.Timeout = TimeSpan.FromMilliseconds(1000);
+            client.Timeout = TimeSpan.FromMilliseconds(5000);
 
             var ret = new Dictionary<string, object>();
 
@@ -77,7 +77,21 @@ namespace HueBridge.Controllers.Default
                 lights_dict[l.Id.ToString()] = l;
             }
 
-            var groups_dict = new Dictionary<string, string>();
+            object groups_dict = new Dictionary<string, string>();
+            var groups_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/groups";
+            try
+            {
+                response = await client.GetAsync(groups_request_url);
+                if (response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    groups_dict = JsonConvert.DeserializeObject(body);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // request time out
+            }
 
             object config_dict = new Dictionary<string, string>();
             var config_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/config";
@@ -95,12 +109,29 @@ namespace HueBridge.Controllers.Default
                 // request time out
             }
 
-            var schedules_dict = new Dictionary<string, string>();
+            object scenes_dict = new Dictionary<string, string>();
+            var scenes_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/scenes";
+            try
+            {
+                response = await client.GetAsync(scenes_request_url);
+                if (response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    scenes_dict = JsonConvert.DeserializeObject(body);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // request time out
+            }
 
             ret["lights"] = lights_dict;
             ret["groups"] = groups_dict;
             ret["config"] = config_dict;
-            ret["schedules"] = schedules_dict;
+            ret["scenes"] = scenes_dict;
+            ret["rules"] = new Dictionary<string, string>();
+            ret["resourcelinks"] = new Dictionary<string, string>();
+            ret["schedules"] = new Dictionary<string, string>(); ;
 
             return Json(ret);
         }

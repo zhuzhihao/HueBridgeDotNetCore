@@ -17,5 +17,12 @@ namespace HueBridge.Models
         public string Type { get; set; }
         public string Class { get; set; }
         public GroupAction Action { get; set; }
+        public GroupState State { get; set; }
+    }
+
+    public class GroupState
+    {
+        public bool Any_on { get; set; }
+        public bool All_on { get; set; }
     }
 }

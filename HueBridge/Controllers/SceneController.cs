@@ -53,7 +53,7 @@ namespace HueBridge.Controllers
 
             var scenes = _grp.DatabaseInstance.GetCollection<Models.Scene>("scenes");
             var s = scenes.FindById(Convert.ToInt64(sceneId));
-            
+            s.SerializeLightStates(true);
             return Json(s);
         }
 
@@ -89,9 +89,13 @@ namespace HueBridge.Controllers
             {
                 Name = newScene.Name,
                 Recycle = newScene.Recycle,
-                Picture = newScene.Picture,
+                Picture = newScene.Picture ?? "",
                 Lights = newScene.Lights,
                 Appdata = newScene.AppData,
+                Type = newScene.Type ?? "LightScene",
+                Version = 2,
+                Owner = user,
+                Lastupdated = DateTime.UtcNow,
                 LightStates = new Dictionary<string, Models.GroupAction>()
             };
 
@@ -175,6 +179,7 @@ namespace HueBridge.Controllers
                                 break;
                         }
                     }
+                    scenes.Update(scene);
                 }
             }
 
@@ -218,6 +223,7 @@ namespace HueBridge.Controllers
             public string Picture { get; set; }
             public List<string> Lights { get; set; }
             public Models.SceneAppData AppData { get; set; }
+            public string Type { get; set; }
         }
 
         public class ModifySceneRequest 

@@ -66,7 +66,7 @@ namespace HueBridge.Controllers
                         {
                             newGroup.Class = "Other";
                         }
-                        if (newGroup.Type != null || newGroup.Type.Length == 0)
+                        if (newGroup.Type == null || newGroup.Type.Length == 0)
                         {
                             newGroup.Type = "LightGroup";
                         }
@@ -107,7 +107,8 @@ namespace HueBridge.Controllers
                 Class = newGroup.Class,
                 Type = newGroup.Type,
                 Lights = newGroup.Lights,
-                Action = new Models.GroupAction()
+                Action = new Models.GroupAction(),
+                State = new Models.GroupState()
             };
 
             var groups = _grp.DatabaseInstance.GetCollection<Models.Group>("groups");

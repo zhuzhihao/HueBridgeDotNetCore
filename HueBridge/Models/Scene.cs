@@ -9,12 +9,12 @@ namespace HueBridge.Models
 {
     public class Scene
     {
+        [JsonIgnore]
         [BsonId]
         public int Id { get; set; }
         public string Name { get; set; }
         public string Type { get; set; }
         public List<string> Lights { get; set; }
-        [JsonIgnore]
         public Dictionary<string, GroupAction> LightStates { get; set; }
         public string Owner { get; set; }
         public bool Recycle { get; set; }
@@ -25,6 +25,13 @@ namespace HueBridge.Models
         public int Version { get; set; }
         [JsonIgnore]
         public bool StoreLightState { get; set; }
+
+        public bool ShouldSerializeLightStates() => enableSerializeLightStates;
+        private bool enableSerializeLightStates = false;
+        public void SerializeLightStates(bool value)
+        {
+            enableSerializeLightStates = value;
+        }
     }
 
     public class SceneAppData
