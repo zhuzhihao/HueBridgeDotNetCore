@@ -196,6 +196,7 @@ namespace HueBridge.Controllers
         #endregion
 
         [Route("{id}/state")]
+        [HttpPut]
         public async Task<JsonResult> SetLightState(string user, string id, [FromBody]SetLightStateRequest newState)
         {
             // authentication
@@ -279,7 +280,8 @@ namespace HueBridge.Controllers
             }
 
             HttpClient client = new HttpClient();
-            var light_request_url = $"http://{light.IPAddress}/set?light=1&colormode={light.State.ColorMode}&on={light.State.On}&bri={light.State.Bri}";
+            var light_request_url = $"http://{light.IPAddress}/set?light=1&colormode={light.State.ColorMode}&on={light.State.On}";
+            light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
             switch (light.State.ColorMode)
             {
                 case "xy":
