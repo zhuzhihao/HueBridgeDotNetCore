@@ -280,19 +280,27 @@ namespace HueBridge.Controllers
             }
 
             HttpClient client = new HttpClient();
-            var light_request_url = $"http://{light.IPAddress}/set?light=1&colormode={light.State.ColorMode}&on={light.State.On}";
-            light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
-            switch (light.State.ColorMode)
+            var light_request_url = $"http://{light.IPAddress}/set?light=1";
+            if (newState.Alert != null)
             {
-                case "xy":
-                    light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
-                    break;
-                case "ct":
-                    light_request_url += $"&ct={light.State.CT}";
-                    break;
-                case "hs":
-                    light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
-                    break;
+                light_request_url += $"&alert={newState.Alert}";
+            }
+            else
+            {
+                light_request_url += $"&colormode={light.State.ColorMode}&on={light.State.On}";
+                light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
+                switch (light.State.ColorMode)
+                {
+                    case "xy":
+                        light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
+                        break;
+                    case "ct":
+                        light_request_url += $"&ct={light.State.CT}";
+                        break;
+                    case "hs":
+                        light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
+                        break;
+                }
             }
 
             var response = await client.GetAsync(light_request_url.ToLower());
