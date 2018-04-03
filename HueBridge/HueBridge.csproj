@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <ApplicationInsightsResourceId>/subscriptions/08af0fd8-ecbc-4571-9b90-1158e7ce691f/resourcegroups/ASPdotnetcore/providers/microsoft.insights/components/HueBridge</ApplicationInsightsResourceId>
+    <ApplicationInsightsAnnotationResourceId>/subscriptions/08af0fd8-ecbc-4571-9b90-1158e7ce691f/resourcegroups/ASPdotnetcore/providers/microsoft.insights/components/HueBridge</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +26,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="SSDP.UPnP.PCL" Version="4.0.6" />
     <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services" />
   </ItemGroup>
 
 </Project>

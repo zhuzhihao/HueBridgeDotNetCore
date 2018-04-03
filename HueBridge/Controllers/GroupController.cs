@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using HueBridge.Models;
 
 /// <summary>
 /// APIs for groups https://developers.meethue.com/documentation/groups-api
@@ -32,8 +33,8 @@ namespace HueBridge.Controllers
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
 
-            var groups = _grp.DatabaseInstance.GetCollection<Models.Group>("groups");
-            var groups_dict = new Dictionary<string, Models.Group>();
+            var groups = _grp.DatabaseInstance.GetCollection<Group>("groups");
+            var groups_dict = new Dictionary<string, Group>();
             foreach (var g in groups.FindAll())
             {
                 groups_dict[g.Id.ToString()] = g;
@@ -85,7 +86,7 @@ namespace HueBridge.Controllers
             }
 
             // verify that lights given by parameters are all known to us
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var lightsInGroup = new LiteDB.BsonArray();
 
             var count = lights.Count(x => newGroup.Lights.Contains(x.Id.ToString()));
@@ -101,17 +102,17 @@ namespace HueBridge.Controllers
             }
 
             // all good, add new group into database
-            var group = new Models.Group
+            var group = new Group
             {
                 Name = newGroup.Name,
                 Class = newGroup.Class,
                 Type = newGroup.Type,
                 Lights = newGroup.Lights,
-                Action = new Models.GroupAction(),
-                State = new Models.GroupState()
+                Action = new GroupAction(),
+                State = new GroupState()
             };
 
-            var groups = _grp.DatabaseInstance.GetCollection<Models.Group>("groups");
+            var groups = _grp.DatabaseInstance.GetCollection<Group>("groups");
             var id = groups.Insert(group);
 
             return Json(new List<Dictionary<string, object>>
@@ -137,7 +138,7 @@ namespace HueBridge.Controllers
             }
             var ret = new object[1];
 
-            var groups = _grp.DatabaseInstance.GetCollection<Models.Group>("groups");
+            var groups = _grp.DatabaseInstance.GetCollection<Group>("groups");
             var nrOfDeletedGroups = groups.Delete(g => g.Id.ToString() == id);
             if (nrOfDeletedGroups == 0)
             {
@@ -157,14 +158,100 @@ namespace HueBridge.Controllers
             }
             return Json(ret);
         }
-    }
 
-    public class CreateGroupRequest
-    {
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public string Class { get; set; }
-        public List<string> Lights { get; set; }
+        [Route("{id}/action")]
+        [HttpPut]
+        public JsonResult SetGroupState(string user, string id, [FromBody]GroupActionRequest newGroupAction)
+        {
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
 
+            var groups = _grp.DatabaseInstance.GetCollection<Group>("groups");
+            var group = Convert.ToInt64(id) > 0 ? groups.FindById(Convert.ToInt64(id)) : new Group
+            {
+                Id = 0,
+                Class = "Other",
+                Name = "All lights",
+                State = new GroupState(),
+                Action = new GroupAction()
+            };
+            if (group == null)
+            {
+                return Json(new
+                {
+                    failure = $"group {id} not found"
+                });
+            }
+            var pp = typeof(GroupAction).GetProperties().ToList();
+            var ret = new List<Dictionary<string, object>>();
+            var colormode = "";
+
+            foreach (var p in typeof(GroupActionRequest).GetProperties())
+            {
+                var pv = p.GetValue(newGroupAction, null);
+                if (pv != null)
+                {
+                    if (p.Name.EndsWith("_inc"))
+                    {
+                        var pName = p.Name.Replace("_inc", "");
+                        var ppOrgValue = pp.Find(x => x.Name == pName).GetValue(group.Action, null);
+                        if (ppOrgValue != null)
+                        {
+                            pp.Find(x => x.Name == pName).SetValue(group.Action, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
+                        }
+
+                        ret.Add(new Dictionary<string, object>
+                        {
+                            ["success"] = new Dictionary<string, object>
+                            {
+                                [$"/groups/{id}/state/{pName.ToLower()}"] = Convert.ToUInt32((uint)ppOrgValue + (int)pv)
+                            }
+                        });
+                    }
+                    else
+                    {
+                        pp.Find(x => x.Name == p.Name).SetValue(group.Action, pv);
+                        ret.Add(new Dictionary<string, object>
+                        {
+                            ["success"] = new Dictionary<string, object>
+                            {
+                                [$"/groups/{id}/state/{p.Name.ToLower()}"] = pv
+                            }
+                        });
+                    }
+
+                    // colormode priority system: xy > ct > hs
+                    switch (p.Name)
+                    {
+                        case nameof(SetLightStateRequest.Hue):
+                        case nameof(SetLightStateRequest.Hue_inc):
+                        case nameof(SetLightStateRequest.Sat):
+                        case nameof(SetLightStateRequest.Sat_inc):
+                            colormode = colormode == "" ? "hs" : colormode;
+                            break;
+                        case nameof(SetLightStateRequest.XY):
+                        case nameof(SetLightStateRequest.XY_inc):
+                            colormode = "xy";
+                            break;
+                        case nameof(SetLightStateRequest.CT):
+                        case nameof(SetLightStateRequest.CT_inc):
+                            colormode = colormode != "xy" ? "ct" : colormode;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            if (colormode != "")
+            {
+                group.Action.ColorMode = colormode;
+            }
+            groups.Update(group);
+
+            return Json(ret);
+        }
     }
 }

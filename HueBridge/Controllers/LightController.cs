@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using HueBridge.Models;
 
 namespace HueBridge.Controllers
 {
+    using System.Net.Http;
     using Utilities;
 
     [Produces("application/json")]
@@ -25,10 +27,10 @@ namespace HueBridge.Controllers
 
         #region /lights
         [HttpGet]
-        public Dictionary<string, Models.Light> Get(string user)
+        public Dictionary<string, Light> Get(string user)
         {
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
-            var ret = new Dictionary<string, Models.Light>();
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
+            var ret = new Dictionary<string, Light>();
             foreach (var l in lights.FindAll())
             {
                 ret[l.Id.ToString()] = l;
@@ -80,7 +82,7 @@ namespace HueBridge.Controllers
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
 
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var newLights = lights.Find(x => x.CreateDate > _lastScan);
 
             var ret = new Dictionary<string, object>();
@@ -107,7 +109,7 @@ namespace HueBridge.Controllers
             {
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             return Json(lights.FindOne(l => l.Id.ToString() == id));
         }
 
@@ -122,7 +124,7 @@ namespace HueBridge.Controllers
             }
             var ret = new object[1];
 
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var nrOfDeletedLights = lights.Delete(l => l.Id.ToString() == id);
             if (nrOfDeletedLights == 0)
             {
@@ -146,7 +148,7 @@ namespace HueBridge.Controllers
 
         [Route("{id}")]
         [HttpPut]
-        public JsonResult RenameLight(string user, string id, [FromBody]ChangeNameRequest newName)
+        public JsonResult RenameLight(string user, string id, [FromBody]ChangeLightNameRequest newName)
         {
             // authentication
             if (!_grp.AuthenticatorInstance.IsValidUser(user))
@@ -158,7 +160,7 @@ namespace HueBridge.Controllers
             // check request
             if (newName != null && newName.Name.Length > 0)
             {
-                var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+                var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
                 var light = lights.FindOne(l => l.Id.ToString() == id);
                 if (light == null)
                 {
@@ -194,7 +196,7 @@ namespace HueBridge.Controllers
         #endregion
 
         [Route("{id}/state")]
-        public JsonResult SetLightState(string user, string id, [FromBody]SetLightStateRequest newState)
+        public async Task<JsonResult> SetLightState(string user, string id, [FromBody]SetLightStateRequest newState)
         {
             // authentication
             if (!_grp.AuthenticatorInstance.IsValidUser(user))
@@ -202,7 +204,7 @@ namespace HueBridge.Controllers
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
 
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var light = lights.FindById(Convert.ToInt64(id));
             if (light == null)
             {
@@ -211,8 +213,7 @@ namespace HueBridge.Controllers
                     failure = $"light {id} not found"
                 });
             }
-            var prevState = JsonConvert.SerializeObject(light.State);
-            var pp = typeof(Models.LightState).GetProperties().ToList();
+            var pp = typeof(LightState).GetProperties().ToList();
             var ret = new List<Dictionary<string, object>>();
             var colormode = "";
 
@@ -229,7 +230,7 @@ namespace HueBridge.Controllers
                         {
                             pp.Find(x => x.Name == pName).SetValue(light.State, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
                         }
-                        
+
                         ret.Add(new Dictionary<string, object>
                         {
                             ["success"] = new Dictionary<string, object>
@@ -250,8 +251,6 @@ namespace HueBridge.Controllers
                         });
                     }
 
-
-                    
                     // colormode priority system: xy > ct > hs
                     switch (p.Name)
                     {
@@ -278,32 +277,27 @@ namespace HueBridge.Controllers
             {
                 light.State.ColorMode = colormode;
             }
+
+            HttpClient client = new HttpClient();
+            var light_request_url = $"http://{light.IPAddress}/set?light=1&colormode={light.State.ColorMode}&on={light.State.On}&bri={light.State.Bri}";
+            switch (light.State.ColorMode)
+            {
+                case "xy":
+                    light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
+                    break;
+                case "ct":
+                    light_request_url += $"&ct={light.State.CT}";
+                    break;
+                case "hs":
+                    light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
+                    break;
+            }
+
+            var response = await client.GetAsync(light_request_url.ToLower());
+
             lights.Update(light);
 
             return Json(ret);
         }
-    }
-
-    public class ChangeNameRequest
-    {
-        public string Name { get; set; }
-    }
-
-    public class SetLightStateRequest
-    {
-        public bool? On { get; set; }
-        public uint? Bri { get; set; }
-        public uint? Hue { get; set; }
-        public uint? Sat { get; set; }
-        public List<float> XY { get; set; }
-        public uint? CT { get; set; }
-        public string Alert { get; set; }
-        public string Effect { get; set; }
-        public int? TransitionTime { get; set; }
-        public int? Bri_inc { get; set; }
-        public int? Sat_inc { get; set; }
-        public int? Hue_inc { get; set; }
-        public int? CT_inc { get; set; }
-        public List<float> XY_inc { get; set; }
     }
 }

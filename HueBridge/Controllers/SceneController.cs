@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using HueBridge.Models;
 
 
 /// <summary>
@@ -31,8 +32,8 @@ namespace HueBridge.Controllers
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
 
-            var scenes = _grp.DatabaseInstance.GetCollection<Models.Scene>("scenes");
-            var scenes_dict = new Dictionary<string, Models.Scene>();
+            var scenes = _grp.DatabaseInstance.GetCollection<Scene>("scenes");
+            var scenes_dict = new Dictionary<string, Scene>();
             foreach (var s in scenes.FindAll())
             {
                 scenes_dict[s.Id.ToString()] = s;
@@ -51,7 +52,7 @@ namespace HueBridge.Controllers
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
 
-            var scenes = _grp.DatabaseInstance.GetCollection<Models.Scene>("scenes");
+            var scenes = _grp.DatabaseInstance.GetCollection<Scene>("scenes");
             var s = scenes.FindById(Convert.ToInt64(sceneId));
             s.SerializeLightStates(true);
             return Json(s);
@@ -69,7 +70,7 @@ namespace HueBridge.Controllers
 
             // parameter check
             // verify that lights given by parameters are all known to us
-            var lights = _grp.DatabaseInstance.GetCollection<Models.Light>("lights");
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var lightsInGroup = new LiteDB.BsonArray();
 
             var count = lights.Count(x => newScene.Lights.Contains(x.Id.ToString()));
@@ -85,7 +86,7 @@ namespace HueBridge.Controllers
             }
 
             // insert new scene
-            var scene = new Models.Scene
+            var scene = new Scene
             {
                 Name = newScene.Name,
                 Recycle = newScene.Recycle,
@@ -96,10 +97,10 @@ namespace HueBridge.Controllers
                 Version = 2,
                 Owner = user,
                 Lastupdated = DateTime.UtcNow,
-                LightStates = new Dictionary<string, Models.GroupAction>()
+                LightStates = new Dictionary<string, GroupAction>()
             };
 
-            var scenes = _grp.DatabaseInstance.GetCollection<Models.Scene>("scenes");
+            var scenes = _grp.DatabaseInstance.GetCollection<Scene>("scenes");
             var id = scenes.Insert(scene);
 
             return Json(new List<Dictionary<string, object>>
@@ -125,7 +126,7 @@ namespace HueBridge.Controllers
             }
 
             // caller want to modify scene name/lights/storelightstate only
-            var scenes = _grp.DatabaseInstance.GetCollection<Models.Scene>("scenes");
+            var scenes = _grp.DatabaseInstance.GetCollection<Scene>("scenes");
             var scene = scenes.FindById(Convert.ToInt64(sceneId));
             if (scene == null)
             {
@@ -150,9 +151,9 @@ namespace HueBridge.Controllers
                 {
                     if (scene.LightStates.Count(x => x.Key == lightId) == 0)
                     {
-                        scene.LightStates[lightId] = new Models.GroupAction();
+                        scene.LightStates[lightId] = new GroupAction();
                     }
-                    var pp = typeof(Models.GroupAction).GetProperties().ToList();
+                    var pp = typeof(GroupAction).GetProperties().ToList();
                     var lightstate = scene.LightStates[lightId];
 
                     foreach (var p in typeof(ModifySceneRequest).GetProperties())
@@ -195,12 +196,12 @@ namespace HueBridge.Controllers
             });
         }
 
-        private JsonResult ModifySceneProperty(ModifySceneRequest newScene, Models.Scene scene)
+        private JsonResult ModifySceneProperty(ModifySceneRequest newScene, Scene scene)
         {
             scene.Name = newScene.Name ?? scene.Name;
             scene.Lights = newScene.Lights ?? scene.Lights;
             scene.StoreLightState = newScene.StoreLightState ?? scene.StoreLightState;
-            var scenes = _grp.DatabaseInstance.GetCollection<Models.Scene>("scenes");
+            var scenes = _grp.DatabaseInstance.GetCollection<Scene>("scenes");
             scenes.Update(scene);
             return Json(new List<Dictionary<string, object>>
             {
@@ -214,33 +215,6 @@ namespace HueBridge.Controllers
                     }
                 }
             });
-        }
-
-        public class CreateSceneRequest
-        {
-            public string Name { get; set; }
-            public bool Recycle { get; set; }
-            public string Picture { get; set; }
-            public List<string> Lights { get; set; }
-            public Models.SceneAppData AppData { get; set; }
-            public string Type { get; set; }
-        }
-
-        public class ModifySceneRequest 
-        {
-            public string Name { get; set; }
-            public List<string> Lights { get; set; }
-            public bool? StoreLightState { get; set; }
-
-            public bool? On { get; set; }
-            public uint? Bri { get; set; }
-            public uint? Hue { get; set; }
-            public uint? Sat { get; set; }
-            public string Effect { get; set; }
-            public float?[] XY { get; set; }
-            public uint? CT { get; set; }
-            public string Alert { get; set; }
-            public string ColorMode { get; set; }
         }
     }
 }
