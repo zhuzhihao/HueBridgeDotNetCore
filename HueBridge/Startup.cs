@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using HueBridge.ApplicationMain;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using Microsoft.Extensions.Hosting;
 
 namespace HueBridge
 {
@@ -31,6 +33,8 @@ namespace HueBridge
             services.Configure<AppOptions>(Configuration);
             services.AddSingleton<Utilities.IScanner, Utilities.ESP8266LightScanner>();
             services.AddSingleton<IGlobalResourceProvider, GlobalResourceProvider>();
+            services.AddSingleton<IHostedService, SsdpService>();
+
             // Add framework services
             services.AddMvc()
                 .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() });
