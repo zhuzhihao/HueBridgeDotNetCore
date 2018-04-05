@@ -12,5 +12,6 @@ namespace HueBridge
         LiteDatabase DatabaseInstance { get; }
         Authenticator AuthenticatorInstance { get; }
         IEnumerable<IScanner> ScannerInstances { get; }
+        CompositeInterfaceInfo CommInterface { get; }
     }
 }

@@ -1,11 +1,8 @@
-﻿using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -15,15 +12,12 @@ namespace HueBridge.Utilities
     {
         private IGlobalResourceProvider _grp;
         private ScannerState _state;
-        private IOptions<AppOptions> _option;
         private Task _scanningTask;
 
         public ESP8266LightScanner(
-            IOptions<AppOptions> optionsAccessor,
             IGlobalResourceProvider grp)
         {
             _state = ScannerState.IDLE;
-            _option = optionsAccessor;
             _grp = grp;
         }
 
@@ -161,34 +155,17 @@ namespace HueBridge.Utilities
         public void Begin()
         {
             // scan subnet xxx.xxx.xxx.1 ~ xxx.xxx.xxx.254 for ESP8266 lights
-            var interfaces = NetworkInterface.GetAllNetworkInterfaces();
-            var found = false;
-            foreach (var i in interfaces)
+
+            _state = ScannerState.SCANNING;
+
+            var ip = string.Join(".", _grp.CommInterface.SocketLiteInfo.IpAddress.Split('.').Take(3));
+            var ipList = new List<string>();
+            for (var i = 1; i < 255; i++)
             {
-                foreach (var addr in i.GetIPProperties().UnicastAddresses)
-                {
-                    if (addr.Address.ToString() == _option.Value.NetworkInterface)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
+                ipList.Add(ip + "." + i.ToString());
             }
 
-            if (found)
-            {
-                _state = ScannerState.SCANNING;
-
-                var ip = string.Join(".", _option.Value.NetworkInterface.Split('.').Take(3));
-                var ipList = new List<string>();
-                for (var i = 1; i < 255; i++)
-                {
-                    ipList.Add(ip + "." + i.ToString());
-                }
-
-                _scanningTask = Task.Run(async () => { await DetectLights(ipList); });
-            }
+            _scanningTask = Task.Run(async () => { await DetectLights(ipList); });
         }
 
         public void Stop()

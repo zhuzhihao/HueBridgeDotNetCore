@@ -1,29 +1,24 @@
-﻿using System;
-using System.Linq;
-using System.Net;
+﻿using Microsoft.Extensions.Hosting;
+using SocketLite.Services;
+using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
-using SocketLite.Model;
-using SocketLite.Services;
-using Microsoft.Extensions.Hosting;
 using System.Threading;
-using Microsoft.Extensions.Options;
-using System.Net.NetworkInformation;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HueBridge.ApplicationMain
 {
     public class SsdpService : IHostedService, IDisposable
     {
-        private IOptions<AppOptions> options;
+        private IGlobalResourceProvider grp;
         private string macAddr;
         private Task worker;
         private IDisposable subscriberUdpMilticast = null;
 
-        public SsdpService(IOptions<AppOptions> optionsAccessor)
+        public SsdpService(IGlobalResourceProvider grp)
         {
-            options = optionsAccessor;
+            this.grp = grp;
         }
 
         public void Dispose()
@@ -45,24 +40,15 @@ namespace HueBridge.ApplicationMain
 
         private async void StartSsdpDiscoveryListener()
         {
-            var communicationInterface = new CommunicationsInterface();
-            var allInterfaces = communicationInterface.GetAllInterfaces();
-            var networkInterface = allInterfaces.FirstOrDefault(x => x.IpAddress == options.Value.NetworkInterface);
-            var allInterfacesSys = NetworkInterface.GetAllNetworkInterfaces();
-            var networkInterfaceSys = allInterfacesSys.First(x => x.GetIPProperties().UnicastAddresses.Count(y => y.Address.ToString() == options.Value.NetworkInterface) == 1);
+            var commInterface = grp.CommInterface;
 
-            if (networkInterface == null)
-            {
-                return;
-            }
-
-            macAddr = networkInterfaceSys.GetPhysicalAddress().ToString();
+            macAddr = commInterface.NativeInfo.GetPhysicalAddress().ToString();
 
             var udpMulticast = new UdpSocketMulticastClient();
             var observerUdpMulticast = await udpMulticast.ObservableMulticastListener(
                 "239.255.255.250",
                 1900,
-                networkInterface,
+                commInterface.SocketLiteInfo,
                 allowMultipleBindToSamePort: false);
             var udpClient = new UdpClient();
 
@@ -106,7 +92,7 @@ namespace HueBridge.ApplicationMain
             sb.Append("HOST: 239.255.255.250:1900\r\n");
             sb.Append("EXT:\r\n");
             sb.Append("CACHE-CONTROL: max-age=100\r\n");
-            sb.Append($"LOCATION: http://{options.Value.NetworkInterface}/description.xml\r\n");
+            sb.Append($"LOCATION: http://{grp.CommInterface.SocketLiteInfo.IpAddress}/description.xml\r\n");
             sb.Append($"SERVER: {Environment.OSVersion.ToString()} UPnP/1.0 IpBridge/1.20.0\r\n");
             sb.Append($"hue-bridgeid: {macAddr.Substring(0, 6)}FFFE{macAddr.Substring(6)} \r\n");
 

@@ -1,11 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace HueBridge.Controllers
 {
@@ -14,14 +10,11 @@ namespace HueBridge.Controllers
     public class ConfigController : Controller
     {
         private IGlobalResourceProvider _grp;
-        private IOptions<AppOptions> _option;
 
         public ConfigController(
-            IGlobalResourceProvider grp,
-            IOptions<AppOptions> optionsAccessor)
+            IGlobalResourceProvider grp)
         {
             _grp = grp;
-            _option = optionsAccessor;
         }
 
         [HttpGet]
@@ -29,49 +22,26 @@ namespace HueBridge.Controllers
         {
             var config = new Models.Config();
 
-            var interfaces = NetworkInterface.GetAllNetworkInterfaces();
-            var found = false;
-            foreach (var i in interfaces)
+            var commInterface = _grp.CommInterface;
+            try
             {
-                foreach (var addr in i.GetIPProperties().UnicastAddresses)
-                {
-                    if (addr.Address.ToString() == _option.Value.NetworkInterface)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found)
-                {
-                    try
-                    {
-                        config.DHCP = i.GetIPProperties().GetIPv4Properties().IsDhcpEnabled;
-                    }
-                    catch (PlatformNotSupportedException)
-                    {
-                        config.DHCP = true;
-                    }
-
-                    config.MAC = string.Join(":", i.GetPhysicalAddress().GetAddressBytes().Select(x => BitConverter.ToString(new byte[] {x})));
-                    config.IPAddress = _option.Value.NetworkInterface;
-                    config.NetMask = i.GetIPProperties().UnicastAddresses.Where(x => (x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &&
-                                                                                      x.Address.ToString() == config.IPAddress))
-                                                                         .Select(x => x.IPv4Mask)
-                                                                         .FirstOrDefault()
-                                                                         .ToString();
-                    try
-                    {
-                        config.Gateway = i.GetIPProperties().GatewayAddresses?[0].Address.ToString();
-                    }
-                    catch (ArgumentOutOfRangeException)
-                    {
-                        config.Gateway = "0.0.0.0";
-                    }
-                    config.ProxyAddress = "";
-                    config.ProxyPort = 0;
-                    break;
-                }
+                config.DHCP = commInterface.NativeInfo.GetIPProperties().GetIPv4Properties().IsDhcpEnabled;
             }
+            catch (PlatformNotSupportedException)
+            {
+                config.DHCP = true;
+            }
+
+            config.MAC = string.Join(":", commInterface.NativeInfo.GetPhysicalAddress().GetAddressBytes().Select(x => BitConverter.ToString(new byte[] {x})));
+            config.IPAddress = commInterface.SocketLiteInfo.IpAddress;
+            config.NetMask = commInterface.NativeInfo.GetIPProperties().UnicastAddresses.Where(x => (x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &&
+                                                                                      x.Address.ToString() == config.IPAddress))
+                                                                        .Select(x => x.IPv4Mask)
+                                                                        .FirstOrDefault()
+                                                                        .ToString();
+            config.Gateway = commInterface.SocketLiteInfo.GatewayAddress;
+            config.ProxyAddress = "";
+            config.ProxyPort = 0;
 
             config.Name = Environment.MachineName;
             config.ZigbeeChannel = 15;

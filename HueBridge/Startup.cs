@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace HueBridge
 {
@@ -36,7 +37,7 @@ namespace HueBridge
             services.AddSingleton<IHostedService, SsdpService>();
 
             // Add framework services
-            services.AddMvc()
+            services.AddMvc(options => { options.OutputFormatters.Add(new XmlSerializerOutputFormatter()); })
                 .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() });
         }
 
