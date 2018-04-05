@@ -21,6 +21,7 @@ namespace HueBridge.Controllers
             ipAddr = grp.CommInterface.SocketLiteInfo.IpAddress;
         }
 
+        [ResponseCache(Duration = 7200)]
         [Route("/description.xml")]
         [HttpGet]
         public Description GetDescription()
@@ -115,7 +116,7 @@ namespace HueBridge.Controllers
         [XmlElement("presentationURL")]
         public string PresentationURL { get; set; }
         [XmlArray("iconList"), XmlArrayItem(typeof(Icon), ElementName = "icon")]
-        public System.Collections.Generic.List<Icon> IconList { get; set; }
+        public List<Icon> IconList { get; set; }
     }
 
     public class Utf8StringWriter : StringWriter
