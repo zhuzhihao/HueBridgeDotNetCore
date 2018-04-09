@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace HueBridge.Controllers
 {
+    /// <summary>
+    /// serve a static xml file for SSDP device discovery service
+    /// </summary>
+
     [Produces("application/xml")]
     public class DescriptionController : Controller
     {
@@ -117,10 +116,5 @@ namespace HueBridge.Controllers
         public string PresentationURL { get; set; }
         [XmlArray("iconList"), XmlArrayItem(typeof(Icon), ElementName = "icon")]
         public List<Icon> IconList { get; set; }
-    }
-
-    public class Utf8StringWriter : StringWriter
-    {
-        public override Encoding Encoding => Encoding.UTF8;
     }
 }
