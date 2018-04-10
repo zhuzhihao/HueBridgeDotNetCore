@@ -335,5 +335,60 @@ namespace HueBridge.Controllers
 
             return Json(ret);
         }
+
+        [Route("{id}")]
+        [HttpPut]
+        // create a new group
+        public JsonResult ModifyGroup(string user, string id, [FromBody]ModifyGroupRequest modifiedGroup)
+        {
+            // authentication
+            if (!_grp.AuthenticatorInstance.IsValidUser(user))
+            {
+                return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
+            }
+
+            var groups = _grp.DatabaseInstance.GetCollection<Group>("groups");
+            var group = groups.FindById(Convert.ToInt64(id));
+            if (group == null)
+            {
+                return Json(new
+                {
+                    failure = $"group {id} not found"
+                });
+            }
+
+            group.Name = modifiedGroup.Name ?? group.Name;
+            group.Class = modifiedGroup.Class ?? group.Class;
+            group.Lights = modifiedGroup.Lights ?? group.Lights;
+
+            groups.Update(group);
+
+            var ret = new List<Dictionary<string, object>>
+            {
+                new Dictionary<string, object>
+                {
+                    ["success"] = new Dictionary<string, object>
+                    {
+                        [$"/groups/{id}/name"] = group.Name
+                    }
+                },
+                new Dictionary<string, object>
+                {
+                    ["success"] = new Dictionary<string, object>
+                    {
+                        [$"/groups/{id}/class"] = group.Class
+                    }
+                },
+                new Dictionary<string, object>
+                {
+                    ["success"] = new Dictionary<string, object>
+                    {
+                        [$"/groups/{id}/lights"] = group.Lights
+                    }
+                }
+            };
+
+            return Json(ret);
+        }
     }
 }

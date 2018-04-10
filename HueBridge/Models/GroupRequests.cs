@@ -13,6 +13,13 @@ namespace HueBridge.Models
         public List<string> Lights { get; set; }
     }
 
+    public class ModifyGroupRequest
+    {
+        public string Name { get; set; }
+        public string Class { get; set; }
+        public List<string> Lights { get; set; }
+    }
+
     public class GroupActionRequest
     {
         public bool? On { get; set; }
