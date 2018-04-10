@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using HueBridge.Models;
+using System.Net.Http;
+using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 /// <summary>
 /// APIs for groups https://developers.meethue.com/documentation/groups-api
@@ -161,7 +165,7 @@ namespace HueBridge.Controllers
 
         [Route("{id}/action")]
         [HttpPut]
-        public JsonResult SetGroupState(string user, string id, [FromBody]GroupActionRequest newGroupAction)
+        public async Task<JsonResult> SetGroupState(string user, string id, [FromBody]GroupActionRequest newGroupAction)
         {
             // authentication
             if (!_grp.AuthenticatorInstance.IsValidUser(user))
@@ -169,12 +173,14 @@ namespace HueBridge.Controllers
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
 
+            var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var groups = _grp.DatabaseInstance.GetCollection<Group>("groups");
             var group = Convert.ToInt64(id) > 0 ? groups.FindById(Convert.ToInt64(id)) : new Group
             {
-                Id = 0,
+                Id = 0, // special group that contains all lights: 0
                 Class = "Other",
                 Name = "All lights",
+                Lights = lights.FindAll().Select(x => Convert.ToString(x.Id)).ToList(),
                 State = new GroupState(),
                 Action = new GroupAction()
             };
@@ -185,69 +191,145 @@ namespace HueBridge.Controllers
                     failure = $"group {id} not found"
                 });
             }
-            var pp = typeof(GroupAction).GetProperties().ToList();
+
             var ret = new List<Dictionary<string, object>>();
-            var colormode = "";
 
-            foreach (var p in typeof(GroupActionRequest).GetProperties())
+            if (newGroupAction.Scene != null)
             {
-                var pv = p.GetValue(newGroupAction, null);
-                if (pv != null)
+                // change scene on group
+                var scenes = _grp.DatabaseInstance.GetCollection<Scene>("scenes");
+                var scene = scenes.FindById(Convert.ToInt64(newGroupAction.Scene));
+                if (scene == null)
                 {
-                    if (p.Name.EndsWith("_inc"))
+                    return Json(new
                     {
-                        var pName = p.Name.Replace("_inc", "");
-                        var ppOrgValue = pp.Find(x => x.Name == pName).GetValue(group.Action, null);
-                        if (ppOrgValue != null)
+                        failure = $"scene {newGroupAction.Scene} not found"
+                    });
+                }
+
+                // find the lights and their lightstate in the scene
+                var newLightStates = scene.LightStates.Where(x => group.Lights.Contains(x.Key));
+                var tasks = new List<Task<HttpResponseMessage>>();
+                var settings = new JsonSerializerSettings();
+                settings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() };
+                foreach (var l in newLightStates)
+                {
+                    HttpClient client = new HttpClient();
+                    var lightstate_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/lights/{l.Key}/state";
+                    var content = new StringContent(JsonConvert.SerializeObject(l.Value, settings), Encoding.UTF8, "application/json");
+                    tasks.Add(client.PutAsync(lightstate_request_url, content));
+                }
+
+                try
+                {
+                    await Task.WhenAll(tasks.ToArray());
+                    ret.Add(new Dictionary<string, object>
+                    {
+                        ["success"] = new Dictionary<string, object>
                         {
-                            pp.Find(x => x.Name == pName).SetValue(group.Action, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
+                            [$"/groups/{id}/state/scene"] = newGroupAction.Scene
                         }
-
-                        ret.Add(new Dictionary<string, object>
-                        {
-                            ["success"] = new Dictionary<string, object>
-                            {
-                                [$"/groups/{id}/state/{pName.ToLower()}"] = Convert.ToUInt32((uint)ppOrgValue + (int)pv)
-                            }
-                        });
-                    }
-                    else
+                    });
+                }
+                catch (Exception ex)
+                {
+                    return Json(new
                     {
-                        pp.Find(x => x.Name == p.Name).SetValue(group.Action, pv);
-                        ret.Add(new Dictionary<string, object>
-                        {
-                            ["success"] = new Dictionary<string, object>
-                            {
-                                [$"/groups/{id}/state/{p.Name.ToLower()}"] = pv
-                            }
-                        });
-                    }
-
-                    // colormode priority system: xy > ct > hs
-                    switch (p.Name)
-                    {
-                        case nameof(SetLightStateRequest.Hue):
-                        case nameof(SetLightStateRequest.Hue_inc):
-                        case nameof(SetLightStateRequest.Sat):
-                        case nameof(SetLightStateRequest.Sat_inc):
-                            colormode = colormode == "" ? "hs" : colormode;
-                            break;
-                        case nameof(SetLightStateRequest.XY):
-                        case nameof(SetLightStateRequest.XY_inc):
-                            colormode = "xy";
-                            break;
-                        case nameof(SetLightStateRequest.CT):
-                        case nameof(SetLightStateRequest.CT_inc):
-                            colormode = colormode != "xy" ? "ct" : colormode;
-                            break;
-                        default:
-                            break;
-                    }
+                        failure = $"group {id} failed to change to new scene {ex.Message}"
+                    });
                 }
             }
-            if (colormode != "")
+            else
             {
-                group.Action.ColorMode = colormode;
+                var pp = typeof(GroupAction).GetProperties().ToList();
+                var colormode = "";
+
+                foreach (var p in typeof(GroupActionRequest).GetProperties())
+                {
+                    var pv = p.GetValue(newGroupAction, null);
+                    if (pv != null)
+                    {
+                        if (p.Name.EndsWith("_inc"))
+                        {
+                            var pName = p.Name.Replace("_inc", "");
+                            var ppOrgValue = pp.Find(x => x.Name == pName).GetValue(group.Action, null);
+                            if (ppOrgValue != null)
+                            {
+                                pp.Find(x => x.Name == pName).SetValue(group.Action, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
+                            }
+
+                            ret.Add(new Dictionary<string, object>
+                            {
+                                ["success"] = new Dictionary<string, object>
+                                {
+                                    [$"/groups/{id}/state/{pName.ToLower()}"] = Convert.ToUInt32((uint)ppOrgValue + (int)pv)
+                                }
+                            });
+                        }
+                        else
+                        {
+                            pp.Find(x => x.Name == p.Name).SetValue(group.Action, pv);
+                            ret.Add(new Dictionary<string, object>
+                            {
+                                ["success"] = new Dictionary<string, object>
+                                {
+                                    [$"/groups/{id}/state/{p.Name.ToLower()}"] = pv
+                                }
+                            });
+                        }
+
+                        // colormode priority system: xy > ct > hs
+                        switch (p.Name)
+                        {
+                            case nameof(SetLightStateRequest.Hue):
+                            case nameof(SetLightStateRequest.Hue_inc):
+                            case nameof(SetLightStateRequest.Sat):
+                            case nameof(SetLightStateRequest.Sat_inc):
+                                colormode = colormode == "" ? "hs" : colormode;
+                                break;
+                            case nameof(SetLightStateRequest.XY):
+                            case nameof(SetLightStateRequest.XY_inc):
+                                colormode = "xy";
+                                break;
+                            case nameof(SetLightStateRequest.CT):
+                            case nameof(SetLightStateRequest.CT_inc):
+                                colormode = colormode != "xy" ? "ct" : colormode;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                if (colormode != "")
+                {
+                    group.Action.ColorMode = colormode;
+                }
+
+                // find the lights and their lightstate in the scene
+                var newLightStates = new Dictionary<string, LightState>();
+                group.Lights.ForEach(x => newLightStates[x] = new LightState
+                {
+                    On = group.Action.On,
+                    Bri = group.Action.Bri,
+                    Hue = group.Action.Hue,
+                    Sat = group.Action.Sat,
+                    XY = group.Action.XY,
+                    CT = group.Action.CT,
+                    Alert = group.Action.Alert,
+                    Effect = group.Action.Effect,
+                    ColorMode = group.Action.ColorMode
+                });
+                
+                var tasks = new List<Task<HttpResponseMessage>>();
+                var settings = new JsonSerializerSettings();
+                settings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() };
+                foreach (var l in newLightStates)
+                {
+                    HttpClient client = new HttpClient();
+                    var lightstate_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/lights/{l.Key}/state";
+                    var content = new StringContent(JsonConvert.SerializeObject(l.Value, settings), Encoding.UTF8, "application/json");
+                    tasks.Add(client.PutAsync(lightstate_request_url, content));
+                }
             }
             groups.Update(group);
 
