@@ -69,7 +69,7 @@ namespace HueBridge
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            _lighthandlerContainer?.Dispose();
         }
 
         public GlobalResourceProvider(

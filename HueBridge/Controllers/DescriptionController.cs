@@ -23,26 +23,24 @@ namespace HueBridge.Controllers
         [ResponseCache(Duration = 7200)]
         [Route("/description.xml")]
         [HttpGet]
-        public Description GetDescription()
+        public Description GetDescription() => new Description
         {
-            return new Description
+            SpecVersion = new Version { Major = 1, Minor = 0 },
+            URLBase = $"http://{ipAddr}",
+            Device = new Device
             {
-                SpecVersion = new Version { Major = 1, Minor = 0 },
-                URLBase = $"http://{ipAddr}",
-                Device = new Device
-                {
-                    DeviceType = "urn:schemas-upnp-org:device:Basic:1",
-                    FriendlyName = $"Philips hue ({ipAddr})",
-                    Manufacturer = "Royal Philips Electronics",
-                    ManufacturerURL = "http://www.philips.com",
-                    ModelDescription = "Philips hue Personal Wireless Lighting",
-                    ModelName = "Philips hue bridge 2015",
-                    ModelNumber = "BSB002",
-                    ModelURL = "http://www.meethue.com",
-                    SerialNumber = macAddr.ToUpper(),
-                    UDN = $"uuid:2f402f80-da50-11e1-9b23-{macAddr.ToLower()}",
-                    PresentationURL = "index.html",
-                    IconList = new List<Icon>
+                DeviceType = "urn:schemas-upnp-org:device:Basic:1",
+                FriendlyName = $"Philips hue ({ipAddr})",
+                Manufacturer = "Royal Philips Electronics",
+                ManufacturerURL = "http://www.philips.com",
+                ModelDescription = "Philips hue Personal Wireless Lighting",
+                ModelName = "Philips hue bridge 2015",
+                ModelNumber = "BSB002",
+                ModelURL = "http://www.meethue.com",
+                SerialNumber = macAddr.ToUpper(),
+                UDN = $"uuid:2f402f80-da50-11e1-9b23-{macAddr.ToLower()}",
+                PresentationURL = "index.html",
+                IconList = new List<Icon>
                     {
                         new Icon
                         {
@@ -53,9 +51,8 @@ namespace HueBridge.Controllers
                             URL = "hue_logo_0.png"
                         }
                     }
-                }
-            };
-        }
+            }
+        };
     }
 
     [XmlRoot("root", Namespace = "urn:schemas-upnp-org:device-1-0")]

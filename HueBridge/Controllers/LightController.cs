@@ -27,7 +27,7 @@ namespace HueBridge.Controllers
 
         #region /lights
         [HttpGet]
-        public Dictionary<string, Light> Get(string user)
+        public Dictionary<string, Light> GetAllLights(string user)
         {
             var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
             var ret = new Dictionary<string, Light>();
@@ -313,35 +313,28 @@ namespace HueBridge.Controllers
                 light.State.ColorMode = colormode;
             }
 
-            HttpClient client = new HttpClient();
-            var light_request_url = $"http://{light.IPAddress}/set?light=1";
-            if (newState.Alert != null)
+            // call for light handlers
+            var handler = _grp.LightHandlers.Where(x => x.SupportedModels.Contains(light.ModelId)).First();
+            if (handler == null)
             {
-                light_request_url += $"&alert={newState.Alert}";
+                return Json(new
+                {
+                    failure = $"No handler found for /lights/{id}"
+                });
+            }
+            var result = await handler.SetLightState(light);
+            if (result)
+            {
+                lights.Update(light);
+                return Json(ret);
             }
             else
             {
-                light_request_url += $"&colormode={light.State.ColorMode}&on={light.State.On}";
-                light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
-                switch (light.State.ColorMode)
+                return Json(new
                 {
-                    case "xy":
-                        light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
-                        break;
-                    case "ct":
-                        light_request_url += $"&ct={light.State.CT}";
-                        break;
-                    case "hs":
-                        light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
-                        break;
-                }
+                    failure = $"Failed to set light state for /lights/{id}"
+                });
             }
-
-            var response = await client.GetAsync(light_request_url.ToLower());
-
-            lights.Update(light);
-
-            return Json(ret);
         }
     }
 }

@@ -12,6 +12,7 @@ namespace HueBridge
         List<string> SupportedModels { get; }
         Task<List<Light>> ScanLights(string hostIP);
         Task<bool> CheckReachable(Light light);
-        Task<object> SetLightState(Light light);
+        Task<bool> SetLightState(Light light);
+        Task<Light> SyncLightState(Light light);
     }
 }
