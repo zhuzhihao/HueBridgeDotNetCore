@@ -13,7 +13,55 @@ namespace HueBridge.Utilities
     [Export(typeof(ILightHandlerContract))]
     public class ESP8266LightHandler : ILightHandlerContract
     {
-        public List<string> SupportedModels => new List<string> { "LST001" };
+        #region hue devices
+        // https://github.com/nsheldon/Hue-Lights-Indigo-plugin/blob/master/Hue%20Lights.indigoPlugin/Contents/Server%20Plugin/supportedDevices.py
+        // List of compatible device IDs that may be associated with a Hue hub.
+        //
+        // LCT001	=	Hue bulb (color gamut B)
+        // LCT002	=	Hue Downlight/Spot BR30 bulb (color gamut B)
+        // LCT003	=	Hue Spot Light GU10 bulb (color gamut B)
+        // LCT007	=	Hue bulb (800 lumen version, color gamut B)
+        // LCT010	=	Hue bulb (A19 version 3, color gamut C)
+        // LCT011	=	Hue bulb (BR30 version 3, color gamut C)
+        // LCT014	=	Hue bulb (alternate A19 version 3)
+        // LLC001	=	LivingColors light (generic)
+        // LLC006	=	LivingColors Gen3 Iris
+        // LLC007	=	LivingColors Gen3 Bloom Aura
+        // LLC010	=	LivingColors Iris (Europe)
+        // LLC011	=	Bloom (European?)
+        // LLC012	=	Bloom
+        // LLC013	=	Disney StoryLight
+        // LLC014	=	LivingColors Aura
+        // LLC020	=	Hue Go
+        // LLM001	=	Hue Luminaire Color Light Module
+        // LLM010	=	Hue Color Temperature Module (2200K - 6500K)
+        // LLM011	=	" " "
+        // LLM012	=	" " "
+        // LST001	=	LED LightStrip
+        // LST002	=	LED LightStrip Plus (RGB + color temperature)
+        // The LightStrip Plus is temporarily in the kHueBulbDeviceIDs
+        // list because it supports color temperature and more code will
+        // need to change before it can be added to the kLightStripsDeviceIDs list.
+        // LTW001	=	Hue White Ambiance bulb (color temperature only bulb).
+        // LTW004	=	Another Hue White Ambiance bulb (color temperature only bulb).
+        // LTW013	=	Hue Ambiance Spot GU10 spotlight bulb.
+        // LTW014	=	" " "
+        // LWB001	=	LivingWhites bulb
+        // LWB003	=	" " "
+        // LWB004	=	Hue A19 Lux
+        // LWB006	=	Hue White A19 extension bulb
+        // LWB007	=	Hue Lux (alternate version)
+        // LWB010	=	Hue White (version 2)
+        // LWB014	=	Hue White (version 3)
+        // LWL001	=	LivingWhites light socket
+        // HML004	=	Phoenix wall lights
+        // HML006	=	Phoenix white LED lights
+        // ZLL Light	=	Generic ZigBee Light (e.g. GE Link LEDs)
+        // FLS-PP3	=	Dresden Elektronik FLS-PP lp LED light strip, color LED segment
+        // FLS-PP3 White = Dresden Elektronik FLS-PP lp LED light strip, white light segment
+        // Classic A60 TW = Osram Lightify CLA60 Tunable White bulb (color temp. only)
+        #endregion
+        public List<string> SupportedModels => new List<string> { "LST001", "LWB001" };
 
         public async Task<List<Light>> ScanLights(string hostIP)
         {

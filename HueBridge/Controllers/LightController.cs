@@ -314,7 +314,7 @@ namespace HueBridge.Controllers
             }
 
             // call for light handlers
-            var handler = _grp.LightHandlers.Where(x => x.SupportedModels.Contains(light.ModelId)).First();
+            var handler = _grp.LightHandlers.Where(x => x.SupportedModels.Contains(light.ModelId)).FirstOrDefault();
             if (handler == null)
             {
                 return Json(new
