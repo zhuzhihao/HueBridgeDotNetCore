@@ -242,7 +242,9 @@ namespace HueBridge.Controllers
             else
             {
                 var pp = typeof(GroupAction).GetProperties().ToList();
+                var ppp = typeof(SetLightStateRequest).GetProperties().ToList();
                 var colormode = "";
+                var req = new SetLightStateRequest();
 
                 foreach (var p in typeof(GroupActionRequest).GetProperties())
                 {
@@ -256,6 +258,7 @@ namespace HueBridge.Controllers
                             if (ppOrgValue != null)
                             {
                                 pp.Find(x => x.Name == pName).SetValue(group.Action, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
+                                ppp.Find(x => x.Name == pName).SetValue(req, Convert.ToUInt32((uint)ppOrgValue + (int)pv));
                             }
 
                             ret.Add(new Dictionary<string, object>
@@ -269,6 +272,7 @@ namespace HueBridge.Controllers
                         else
                         {
                             pp.Find(x => x.Name == p.Name).SetValue(group.Action, pv);
+                            ppp.Find(x => x.Name == p.Name).SetValue(req, pv);
                             ret.Add(new Dictionary<string, object>
                             {
                                 ["success"] = new Dictionary<string, object>
@@ -306,28 +310,14 @@ namespace HueBridge.Controllers
                 }
 
                 // find the lights and their lightstate in the scene
-                var newLightStates = new Dictionary<string, LightState>();
-                group.Lights.ForEach(x => newLightStates[x] = new LightState
-                {
-                    On = group.Action.On,
-                    Bri = group.Action.Bri,
-                    Hue = group.Action.Hue,
-                    Sat = group.Action.Sat,
-                    XY = group.Action.XY,
-                    CT = group.Action.CT,
-                    Alert = group.Action.Alert,
-                    Effect = group.Action.Effect,
-                    ColorMode = group.Action.ColorMode
-                });
-                
                 var tasks = new List<Task<HttpResponseMessage>>();
                 var settings = new JsonSerializerSettings();
                 settings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() };
-                foreach (var l in newLightStates)
+                foreach (var l in group.Lights)
                 {
                     HttpClient client = new HttpClient();
-                    var lightstate_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/lights/{l.Key}/state";
-                    var content = new StringContent(JsonConvert.SerializeObject(l.Value, settings), Encoding.UTF8, "application/json");
+                    var lightstate_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/lights/{l}/state";
+                    var content = new StringContent(JsonConvert.SerializeObject(req, settings), Encoding.UTF8, "application/json");
                     tasks.Add(client.PutAsync(lightstate_request_url, content));
                 }
             }
