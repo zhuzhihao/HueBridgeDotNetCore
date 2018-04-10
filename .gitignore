@@ -11,3 +11,5 @@
 /HueBridge/bin/Debug/netcoreapp2.0
 /HueBridge/.vs
 /.vs/config
+/ESP8266LightHandler/bin/Debug/netcoreapp2.0
+/ESP8266LightHandler/obj

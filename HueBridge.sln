@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HueBridge", "HueBridge\HueBridge.csproj", "{B722137B-36BF-4614-B1F4-BD4630ED8444}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESP8266LightHandler", "ESP8266LightHandler\ESP8266LightHandler.csproj", "{C0EF96F7-F0CC-46ED-A29C-3C3132269584}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{B722137B-36BF-4614-B1F4-BD4630ED8444}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B722137B-36BF-4614-B1F4-BD4630ED8444}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B722137B-36BF-4614-B1F4-BD4630ED8444}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0EF96F7-F0CC-46ED-A29C-3C3132269584}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0EF96F7-F0CC-46ED-A29C-3C3132269584}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0EF96F7-F0CC-46ED-A29C-3C3132269584}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0EF96F7-F0CC-46ED-A29C-3C3132269584}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

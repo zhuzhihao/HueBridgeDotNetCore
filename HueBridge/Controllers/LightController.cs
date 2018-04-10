@@ -40,7 +40,7 @@ namespace HueBridge.Controllers
         }
 
         [HttpPost]
-        public JsonResult Post(string user)
+        public JsonResult ScanForNewLights(string user)
         {
             // authentication
             if (!_grp.AuthenticatorInstance.IsValidUser(user))
@@ -49,14 +49,48 @@ namespace HueBridge.Controllers
             }
 
             _lastScan = DateTime.Now;
-            // begin scanning all kinds of devices
-            foreach (var s in _grp.ScannerInstances)
+            // begin scanning all kinds of lights
+            Task.Factory.StartNew(async () =>
             {
-                if (s.State == ScannerState.IDLE)
+                var tasks = new List<Task<List<Light>>>();
+                foreach (var h in _grp.LightHandlers)
                 {
-                    s.Begin();
+                    tasks.Add(h.ScanLights(_grp.CommInterface.SocketLiteInfo.IpAddress));
                 }
-            }
+                try
+                {
+                    var l = await Task.WhenAll(tasks);
+                    var expanded = new List<Light>();
+                    foreach (var ll in l)
+                    {
+                        ll.ForEach(x => expanded.Add(x));
+                    }
+
+                    var lights = _grp.DatabaseInstance.GetCollection<Light>("lights");
+                    foreach (var ll in expanded)
+                    {
+                        // check that the light is not in db
+                        if (lights.FindOne(x => x.UniqueId == ll.UniqueId) == null)
+                        {
+                            try
+                            {
+                                lights.EnsureIndex(x => x.UniqueId, true);
+                                lights.Insert(ll);
+                                ll.Name = $"{ll.ModelId} {ll.Id}";
+                                lights.Update(ll);
+                            }
+                            catch (LiteDB.LiteException ex)
+                            {
+                                Console.WriteLine(ex);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+
+                }
+            });
 
             return Json(new List<Dictionary<string, object>>
             {

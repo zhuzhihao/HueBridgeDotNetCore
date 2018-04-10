@@ -7,29 +7,34 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.IO;
+using System.Composition.Convention;
+using System.Runtime.Loader;
+using System.Composition.Hosting;
 
 namespace HueBridge
 {
-    public class GlobalResourceProvider : IGlobalResourceProvider
+    public class GlobalResourceProvider : IGlobalResourceProvider, IDisposable
     {
         private IServiceProvider _serviceProvider;
         private LiteDatabase _database;
         private Authenticator _authenticator;
-        private List<IScanner> _scanners;
+        private IEnumerable<ILightHandlerContract> _lighthandlers;
         private IOptions<AppOptions> _options;
         private CompositeInterfaceInfo _commInterface;
+        private CompositionHost _lighthandlerContainer;
 
         public LiteDatabase DatabaseInstance => _database;
         public Authenticator AuthenticatorInstance => _authenticator;
-        public IEnumerable<IScanner> ScannerInstances
+        public IEnumerable<ILightHandlerContract> LightHandlers
         {
             get
             {
-                if (_scanners == null)
+                if (_lighthandlers == null)
                 {
-                    _scanners = _serviceProvider.GetServices<IScanner>().ToList();
+                    LoadLightHandlers();
                 }
-                return _scanners;
+                return _lighthandlers;
             }
         }
         public CompositeInterfaceInfo CommInterface
@@ -43,7 +48,29 @@ namespace HueBridge
                 return _commInterface;
             }
         }
+        private void LoadLightHandlers()
+        {
+            var assemblies = Directory
+                        .GetFiles("./", "MEF.*.dll", SearchOption.AllDirectories)
+                        .Select(x => Path.Combine(Directory.GetCurrentDirectory(), x))
+                        .Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)
+                        .ToList();
 
+            var conventions = new ConventionBuilder();
+            conventions.ForTypesDerivedFrom<ILightHandlerContract>()
+                        .Export<ILightHandlerContract>()
+                        .Shared();
+            var configuration = new ContainerConfiguration()
+                        .WithAssemblies(assemblies, conventions);
+
+            _lighthandlerContainer = configuration.CreateContainer();
+            _lighthandlers = _lighthandlerContainer.GetExports<ILightHandlerContract>();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
 
         public GlobalResourceProvider(
             IServiceProvider serviceProvider,

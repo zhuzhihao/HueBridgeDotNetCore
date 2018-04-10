@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Utilities\ESP8266\**" />
+    <Content Remove="Utilities\ESP8266\**" />
+    <EmbeddedResource Remove="Utilities\ESP8266\**" />
+    <None Remove="Utilities\ESP8266\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Readme.md" />
   </ItemGroup>
 
