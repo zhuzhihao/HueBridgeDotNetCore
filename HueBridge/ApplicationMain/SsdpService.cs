@@ -23,7 +23,7 @@ namespace HueBridge.ApplicationMain
 
         public void Dispose()
         {
-            subscriberUdpMilticast.Dispose();
+            subscriberUdpMilticast?.Dispose();
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -34,7 +34,7 @@ namespace HueBridge.ApplicationMain
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            subscriberUdpMilticast.Dispose();
+            subscriberUdpMilticast?.Dispose();
             return Task.CompletedTask;
         }
 
@@ -45,42 +45,52 @@ namespace HueBridge.ApplicationMain
             macAddr = commInterface.NativeInfo.GetPhysicalAddress().ToString();
 
             var udpMulticast = new UdpSocketMulticastClient();
-            var observerUdpMulticast = await udpMulticast.ObservableMulticastListener(
-                "239.255.255.250",
-                1900,
-                commInterface.SocketLiteInfo,
-                allowMultipleBindToSamePort: false);
-            var udpClient = new UdpClient();
+            try
+            {
+                var observerUdpMulticast = await udpMulticast.ObservableMulticastListener(
+                    "239.255.255.250",
+                    1900,
+                    commInterface.SocketLiteInfo,
+                    allowMultipleBindToSamePort: false);
+                var udpClient = new UdpClient();
 
-            subscriberUdpMilticast = observerUdpMulticast.Subscribe(
-                async udpMsg =>
-                {
-                    var msg = Encoding.UTF8.GetString(udpMsg.ByteData);
-                    if (msg.StartsWith("M-SEARCH * HTTP/1.1") && msg.Contains("ssdp:discover"))
+                subscriberUdpMilticast = observerUdpMulticast.Subscribe(
+                    async udpMsg =>
                     {
-                        Console.BackgroundColor = ConsoleColor.Green;
-                        Console.ForegroundColor = ConsoleColor.Black;
-                        Console.WriteLine("Responding M-SEARCH request from " + udpMsg.RemoteAddress);
-                        Console.ResetColor();
-
-                        await Task.Delay(new Random().Next(0, 3000));
-
-                        var responses = BuildResponse();
-                        foreach (var r in responses)
+                        var msg = Encoding.UTF8.GetString(udpMsg.ByteData);
+                        if (msg.StartsWith("M-SEARCH * HTTP/1.1") && msg.Contains("ssdp:discover"))
                         {
-                            var bytes = Encoding.UTF8.GetBytes(r);
-                            await udpClient.SendAsync(bytes, bytes.Length, hostname: udpMsg.RemoteAddress, port: Convert.ToInt32(udpMsg.RemotePort));
+                            Console.BackgroundColor = ConsoleColor.Green;
+                            Console.ForegroundColor = ConsoleColor.Black;
+                            Console.WriteLine("Responding M-SEARCH request from " + udpMsg.RemoteAddress);
+                            Console.ResetColor();
+
+                            await Task.Delay(new Random().Next(0, 3000));
+
+                            var responses = BuildResponse();
+                            foreach (var r in responses)
+                            {
+                                var bytes = Encoding.UTF8.GetBytes(r);
+                                await udpClient.SendAsync(bytes, bytes.Length, hostname: udpMsg.RemoteAddress, port: Convert.ToInt32(udpMsg.RemotePort));
+                            }
                         }
-                    }
-                },
-                ex =>
-                {
+                    },
+                    ex =>
+                    {
                     //Insert your exception code here
                 },
-                () =>
-                {
+                    () =>
+                    {
                     //Insert your completion code here
                 });
+            }
+            catch (SocketException ex)
+            {
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine($"Failed to start SSDP device profile: {ex.Message}");
+                Console.ResetColor();
+            }
         }
 
         private List<string> BuildResponse()
