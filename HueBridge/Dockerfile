@@ -30,7 +30,6 @@ FROM microsoft/dotnet:2.0.5-runtime-stretch-arm32v7
 WORKDIR /root/
 COPY --from=builder /root/src/app/HueBridge/published .
 ENV ASPNETCORE_URLS=http://+:80
-EXPOSE 80
 # This runs your app with the dotnet exe included with the runtime or SDK
 CMD ["dotnet", "./HueBridge.dll"]  
 # This runs your self-contained .NET Core app. You built with -r to get this

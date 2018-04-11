@@ -70,7 +70,8 @@ namespace HueBridge.Controllers
                     foreach (var ll in expanded)
                     {
                         // check that the light is not in db
-                        if (lights.FindOne(x => x.UniqueId == ll.UniqueId) == null)
+                        var light_in_db = lights.FindOne(x => x.UniqueId == ll.UniqueId);
+                        if (light_in_db == null)
                         {
                             try
                             {
@@ -78,6 +79,19 @@ namespace HueBridge.Controllers
                                 lights.Insert(ll);
                                 ll.Name = $"{ll.ModelId} {ll.Id}";
                                 lights.Update(ll);
+                            }
+                            catch (LiteDB.LiteException ex)
+                            {
+                                Console.WriteLine(ex);
+                            }
+                        }
+                        else if (light_in_db.IPAddress != ll.IPAddress)
+                        {
+                            // update ip address in database
+                            try
+                            {
+                                light_in_db.IPAddress = ll.IPAddress;
+                                lights.Update(light_in_db);
                             }
                             catch (LiteDB.LiteException ex)
                             {
