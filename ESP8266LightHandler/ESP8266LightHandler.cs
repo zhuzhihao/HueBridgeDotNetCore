@@ -76,7 +76,7 @@ namespace HueBridge.Utilities
             var devices = new List<string>();
             // first scan 80 port in local network
             var portScanTasks = ipList.Select(i => TestHttpPort(i)).ToList();
-            Task.WaitAll(portScanTasks.ToArray(), 500); // wait maximum 500ms
+            Task.WaitAll(portScanTasks.ToArray(), 2000); // wait maximum 2000ms
 
             devices = portScanTasks.Where(t => t.IsCompleted)
                                     .Select(x => x.Result)
@@ -167,7 +167,7 @@ namespace HueBridge.Utilities
             var url = $"http://{ip}/detect";
             HttpClient client = new HttpClient();
             HttpResponseMessage response;
-            client.Timeout = TimeSpan.FromMilliseconds(1000);
+            client.Timeout = TimeSpan.FromMilliseconds(2000);
 
             try
             {

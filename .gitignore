@@ -13,3 +13,5 @@
 /.vs/config
 /ESP8266LightHandler/bin/Debug/netcoreapp2.0
 /ESP8266LightHandler/obj
+/HueBridge/bin/Release/netcoreapp2.0
+/KonkeSmartDeviceHandler/obj
