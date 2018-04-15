@@ -33,6 +33,7 @@ namespace HueBridge
             services.Configure<AppOptions>(Configuration);
             services.AddSingleton<IGlobalResourceProvider, GlobalResourceProvider>();
             services.AddSingleton<IHostedService, SsdpService>();
+            services.AddSingleton<IHostedService, HueBridgeEngine>();
 
             // Add framework services
             services.AddMvc(options => { options.OutputFormatters.Add(new XmlSerializerOutputFormatter()); })

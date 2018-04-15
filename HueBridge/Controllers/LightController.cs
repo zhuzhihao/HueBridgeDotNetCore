@@ -55,7 +55,14 @@ namespace HueBridge.Controllers
                 var tasks = new List<Task<List<Light>>>();
                 foreach (var h in _grp.LightHandlers)
                 {
-                    tasks.Add(h.ScanLights(_grp.CommInterface.SocketLiteInfo.IpAddress));
+                    try
+                    {
+                        tasks.Add(h.ScanLights(_grp.CommInterface.SocketLiteInfo.IpAddress));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Cannot initiate scan lights task for {h.GetType().Name}:{ex.Message}");
+                    }
                 }
                 try
                 {

@@ -13,6 +13,6 @@ namespace HueBridge
         Task<List<Light>> ScanLights(string hostIP);
         Task<bool> CheckReachable(Light light);
         Task<bool> SetLightState(Light light);
-        Task<Light> SyncLightState(Light light);
+        Task<Light> GetLightState(Light light);
     }
 }

@@ -30,7 +30,7 @@ namespace HueBridge.Utilities
             throw new NotImplementedException();
         }
 
-        public Task<Light> SyncLightState(Light light)
+        public Task<Light> GetLightState(Light light)
         {
             throw new NotImplementedException();
         }

@@ -29,7 +29,7 @@ namespace HueBridge.ApplicationMain
         public Task StartAsync(CancellationToken cancellationToken)
         {
             worker = Task.Factory.StartNew(StartSsdpDiscoveryListener);
-            return worker;
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

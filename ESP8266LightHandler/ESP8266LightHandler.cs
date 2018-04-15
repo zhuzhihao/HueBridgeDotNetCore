@@ -102,41 +102,78 @@ namespace HueBridge.Utilities
             return (await TestHttpPort(light.IPAddress)) == light.IPAddress;
         }
 
-        public Task<Light> SyncLightState(Light light)
+        class LightStateResponse
         {
-            throw new NotImplementedException();
+            public bool? On { get; set; }
+            public uint? Bri { get; set; }
+            public uint? Hue { get; set; }
+            public uint? Sat { get; set; }
+            public List<float> XY { get; set; }
+            public uint? CT { get; set; }
+            public string ColorMode { get; set; }
         }
+        public async Task<Light> GetLightState(Light light)
+        {
+            using (var client = new HttpClient())
+            {
+                var lightstate_request_url = $"http://{light.IPAddress}/get?light=1";
+                try
+                {
+                    client.Timeout = TimeSpan.FromSeconds(2);
+                    var response = client.GetAsync(lightstate_request_url);
+                    var responseText = await response.Result.Content.ReadAsStringAsync();
+                    var newState = JsonConvert.DeserializeObject<LightStateResponse>(responseText);
+
+                    light.State.Reachable = true;
+                    light.State.On = newState.On ?? light.State.On;
+                    light.State.Bri = newState.Bri ?? light.State.Bri;
+                    light.State.XY = newState.XY ?? light.State.XY;
+                    light.State.CT = newState.CT ?? light.State.CT;
+                    light.State.Sat = newState.Sat ?? light.State.Sat;
+                    light.State.Hue = newState.Hue ?? light.State.Hue;
+                    light.State.ColorMode = newState.ColorMode ?? light.State.ColorMode;
+                }
+                catch
+                {
+                    light.State.Reachable = false;
+                }
+
+                return light;
+            }
+        } 
 
         public async Task<bool> SetLightState(Light light)
         {
             var newState = light.State;
-            HttpClient client = new HttpClient();
-            var light_request_url = $"http://{light.IPAddress}/set?light=1";
-            if (newState.Alert != "none")
+            using (var client = new HttpClient())
             {
-                light_request_url += $"&alert={newState.Alert}";
-                newState.Alert = "none";
-            }
-            else
-            {
-                light_request_url += $"&colormode={light.State.ColorMode}&on={light.State.On}";
-                light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
-                switch (light.State.ColorMode)
+                var light_request_url = $"http://{light.IPAddress}/set?light=1";
+                if (newState.Alert != "none")
                 {
-                    case "xy":
-                        light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
-                        break;
-                    case "ct":
-                        light_request_url += $"&ct={light.State.CT}";
-                        break;
-                    case "hs":
-                        light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
-                        break;
+                    light_request_url += $"&alert={newState.Alert}";
+                    newState.Alert = "none";
                 }
-            }
+                else
+                {
+                    light_request_url += $"&colormode={light.State.ColorMode}&on={light.State.On}";
+                    light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
+                    switch (light.State.ColorMode)
+                    {
+                        case "xy":
+                            light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
+                            break;
+                        case "ct":
+                            light_request_url += $"&ct={light.State.CT}";
+                            break;
+                        case "hs":
+                            light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
+                            break;
+                    }
+                }
 
-            var response = await client.GetAsync(light_request_url.ToLower());
-            return response.IsSuccessStatusCode;
+                var response = await client.GetAsync(light_request_url.ToLower());
+                return response.IsSuccessStatusCode;
+            }
         }
 
         private async Task<string> TestHttpPort(string ip)
