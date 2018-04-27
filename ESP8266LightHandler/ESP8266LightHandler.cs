@@ -114,6 +114,8 @@ namespace HueBridge.Utilities
         }
         public async Task<Light> GetLightState(Light light)
         {
+            Console.WriteLine($"Requesting light state: {light.IPAddress}");
+
             using (var client = new HttpClient())
             {
                 var lightstate_request_url = $"http://{light.IPAddress}/get?light=1";
@@ -147,6 +149,7 @@ namespace HueBridge.Utilities
             var newState = light.State;
             using (var client = new HttpClient())
             {
+                client.Timeout = TimeSpan.FromSeconds(2);
                 var light_request_url = $"http://{light.IPAddress}/set?light=1";
                 if (newState.Alert != "none")
                 {
@@ -171,8 +174,15 @@ namespace HueBridge.Utilities
                     }
                 }
 
-                var response = await client.GetAsync(light_request_url.ToLower());
-                return response.IsSuccessStatusCode;
+                try
+                {
+                    var response = await client.GetAsync(light_request_url.ToLower());
+                    return response.IsSuccessStatusCode;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 
