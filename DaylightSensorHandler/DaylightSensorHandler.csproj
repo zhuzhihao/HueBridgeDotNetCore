@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>MEF.DaylightSensorHandler</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\HueBridge\bin\Debug\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\HueBridge\bin\Release\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SolarCalculator" Version="2.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HueBridge\HueBridge.csproj" />
+  </ItemGroup>
+
+</Project>

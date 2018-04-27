@@ -12,6 +12,7 @@ namespace HueBridge
         LiteDatabase DatabaseInstance { get; }
         Authenticator AuthenticatorInstance { get; }
         IEnumerable<ILightHandlerContract> LightHandlers { get; }
+        IEnumerable<ISensorHandlerContract> SensorHandlers { get; }
         CompositeInterfaceInfo CommInterface { get; }
     }
 }

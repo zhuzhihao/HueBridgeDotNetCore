@@ -20,9 +20,11 @@ namespace HueBridge
         private LiteDatabase _database;
         private Authenticator _authenticator;
         private IEnumerable<ILightHandlerContract> _lighthandlers;
+        private IEnumerable<ISensorHandlerContract> _sensorhandlers;
         private IOptions<AppOptions> _options;
         private CompositeInterfaceInfo _commInterface;
         private CompositionHost _lighthandlerContainer;
+        private CompositionHost _sensorhandlerContainer;
 
         public LiteDatabase DatabaseInstance => _database;
         public Authenticator AuthenticatorInstance => _authenticator;
@@ -35,6 +37,17 @@ namespace HueBridge
                     LoadLightHandlers();
                 }
                 return _lighthandlers;
+            }
+        }
+        public IEnumerable<ISensorHandlerContract> SensorHandlers
+        {
+            get
+            {
+                if (_sensorhandlers == null)
+                {
+                    LoadSensorHandlers();
+                }
+                return _sensorhandlers;
             }
         }
         public CompositeInterfaceInfo CommInterface
@@ -65,6 +78,25 @@ namespace HueBridge
 
             _lighthandlerContainer = configuration.CreateContainer();
             _lighthandlers = _lighthandlerContainer.GetExports<ILightHandlerContract>();
+        }
+
+        private void LoadSensorHandlers()
+        {
+            var assemblies = Directory
+                        .GetFiles("./", "MEF.*.dll", SearchOption.AllDirectories)
+                        .Select(x => Path.Combine(Directory.GetCurrentDirectory(), x))
+                        .Select(AssemblyLoadContext.Default.LoadFromAssemblyPath)
+                        .ToList();
+
+            var conventions = new ConventionBuilder();
+            conventions.ForTypesDerivedFrom<ISensorHandlerContract>()
+                        .Export<ISensorHandlerContract>()
+                        .Shared();
+            var configuration = new ContainerConfiguration()
+                        .WithAssemblies(assemblies, conventions);
+
+            _sensorhandlerContainer = configuration.CreateContainer();
+            _sensorhandlers = _sensorhandlerContainer.GetExports<ISensorHandlerContract>();
         }
 
         public void Dispose()

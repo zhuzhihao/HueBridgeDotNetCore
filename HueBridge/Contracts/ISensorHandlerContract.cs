@@ -6,7 +6,7 @@ using HueBridge.Models;
 
 namespace HueBridge
 {
-    interface ISensorHandlerContract
+    public interface ISensorHandlerContract
     {
         List<string> SupportedModels { get; }
         Task<List<Sensor>> ScanSensors(string hostIP);

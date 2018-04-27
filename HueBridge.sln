@@ -5,11 +5,13 @@ VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HueBridge", "HueBridge\HueBridge.csproj", "{B722137B-36BF-4614-B1F4-BD4630ED8444}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESP8266LightHandler", "ESP8266LightHandler\ESP8266LightHandler.csproj", "{C0EF96F7-F0CC-46ED-A29C-3C3132269584}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ESP8266LightHandler", "ESP8266LightHandler\ESP8266LightHandler.csproj", "{C0EF96F7-F0CC-46ED-A29C-3C3132269584}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonkeSmartDeviceHandler", "KonkeSmartDeviceHandler\KonkeSmartDeviceHandler.csproj", "{963E3ACA-E7F7-43F8-8063-AE669449A82F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KonkeSmartDeviceHandler", "KonkeSmartDeviceHandler\KonkeSmartDeviceHandler.csproj", "{963E3ACA-E7F7-43F8-8063-AE669449A82F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{D2D28C87-04BC-4A7F-93E0-DB0C0AF0CB97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DaylightSensorHandler", "DaylightSensorHandler\DaylightSensorHandler.csproj", "{A301F5B7-F1F8-4F22-BF6E-BD736A202C88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,10 @@ Global
 		{963E3ACA-E7F7-43F8-8063-AE669449A82F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{963E3ACA-E7F7-43F8-8063-AE669449A82F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{963E3ACA-E7F7-43F8-8063-AE669449A82F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A301F5B7-F1F8-4F22-BF6E-BD736A202C88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A301F5B7-F1F8-4F22-BF6E-BD736A202C88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A301F5B7-F1F8-4F22-BF6E-BD736A202C88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A301F5B7-F1F8-4F22-BF6E-BD736A202C88}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -36,6 +42,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{C0EF96F7-F0CC-46ED-A29C-3C3132269584} = {D2D28C87-04BC-4A7F-93E0-DB0C0AF0CB97}
 		{963E3ACA-E7F7-43F8-8063-AE669449A82F} = {D2D28C87-04BC-4A7F-93E0-DB0C0AF0CB97}
+		{A301F5B7-F1F8-4F22-BF6E-BD736A202C88} = {D2D28C87-04BC-4A7F-93E0-DB0C0AF0CB97}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B03D387F-8329-4FC0-8AD6-F0DBA9ED005D}
