@@ -62,9 +62,24 @@ namespace HueBridge.Utilities
         // Classic A60 TW = Osram Lightify CLA60 Tunable White bulb (color temp. only)
         #endregion
         public List<string> SupportedModels => new List<string> { "LST001", "LWB001" };
+        private static object mylock = new object();
+
+        private static void DebugOutput(string msg)
+        {
+            lock (mylock)
+            {
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.BackgroundColor = ConsoleColor.White;
+                Console.Write("[ESP8266LightHandler] ");
+                Console.ResetColor();
+                Console.WriteLine(msg);
+            }
+        }
 
         public async Task<List<Light>> ScanLights(string hostIP)
         {
+            DebugOutput("Start scanning...");
+
             // scan devices in class C subnet
             var ip = string.Join(".", hostIP.Split('.').Take(3));
             var ipList = new List<string>();
@@ -87,11 +102,13 @@ namespace HueBridge.Utilities
             try
             {
                 var lights = await Task.WhenAll(checkLightTasks);
-                return lights.Where(x => x != null).ToList();
+                var ret = lights.Where(x => x != null).ToList();
+                DebugOutput($"Scanning finished, found {ret.Count} devices");
+                return ret;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                DebugOutput(ex.Message);
             }
 
             return null;
@@ -114,7 +131,7 @@ namespace HueBridge.Utilities
         }
         public async Task<Light> GetLightState(Light light)
         {
-            Console.WriteLine($"Requesting light state: {light.IPAddress}");
+            DebugOutput($"Requesting light state: {light.IPAddress}");
 
             using (var client = new HttpClient())
             {
@@ -209,7 +226,7 @@ namespace HueBridge.Utilities
 
         private async Task<Light> CheckAndAddLights(string ip)
         {
-            Console.WriteLine($"Checking {ip}");
+            DebugOutput($"Checking {ip}");
 
             var url = $"http://{ip}/detect";
             HttpClient client = new HttpClient();

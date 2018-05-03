@@ -27,6 +27,8 @@ namespace HueBridge.Models
                                                         // A gap in the lightpoint position indicates an incomplete luminaire (light search required to discover missing light points in this case).
         public StreamingCapability Streaming { get; set; } = new StreamingCapability();
         public string SWVersion { get; set; }
+        [JsonIgnore]
+        public string MetaData { get; set; }
     }
 
     public class LightState
