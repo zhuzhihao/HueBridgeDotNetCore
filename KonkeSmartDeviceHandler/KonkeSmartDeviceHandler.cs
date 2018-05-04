@@ -33,9 +33,9 @@ namespace KonkeSmartDeviceHandler
 
         public List<string> SupportedModels => new List<string> { "LTW001", "ZLL Light" };
 
-        public Task<bool> CheckReachable(Light light)
+        public async Task<bool> CheckReachable(Light light)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public async Task<List<Light>> ScanLights(string hostIP)
@@ -72,31 +72,40 @@ namespace KonkeSmartDeviceHandler
                                 DebugOutput($"From:{result.RemoteEndPoint.ToString()} Data:{resp}");
 
                                 // parse % separated data
-                                var data = resp.Split('%');
-                                if (data.Length == 5)
+                                var data = resp.TrimEnd('\0').Split('%');
+                                if (data.Length == 5 && data[4] == "hack")
                                 {
                                     // data[0] lan_device
                                     // data[1] mac address
                                     // data[2] password
                                     // data[3] action
                                     // data[4] message type
-                                    string name, model;
-                                    switch (data[4])
+                                    string name, model, swversion;
+                                    var action = data[3].Split('#');
+                                    // use hardware version to tell the model
+                                    if (action.Length >= 3)
                                     {
-                                        // relay
-                                        case "rack":
+                                        if (action[1].StartsWith("hv"))
+                                        {
                                             name = "KRelay";
                                             model = "ZLL Light";
-                                            break;
-                                        // kbulb
-                                        case "kback":
+                                        }
+                                        else if (action[1].StartsWith("kbulb_hv"))
+                                        {
                                             name = "KBulb";
                                             model = "LTW001";
-                                            break;
-                                        default:
-                                            throw new ArgumentException($"Unkown device type: {data[4]}");
+                                        }
+                                        else
+                                        {
+                                            throw new ArgumentException($"Unkown device type: {action[1]}");
+                                        }
+                                        swversion = action[2].Substring(action[2].IndexOf("sv") + 2);
                                     }
-
+                                    else
+                                    {
+                                        throw new ArgumentException($"Unkown device type: {data[1]}");
+                                    }
+                                    
                                     // avoid adding same device twice
                                     if (lights.Count(x => x.UniqueId == data[1] + "-01") == 0)
                                     {
@@ -115,7 +124,7 @@ namespace KonkeSmartDeviceHandler
                                                 Renderer = false,
                                                 Proxy = false
                                             },
-                                            SWVersion = "2.1.8",
+                                            SWVersion = swversion,
                                             State = new LightState
                                             {
                                                 ColorMode = "ct",
@@ -211,9 +220,9 @@ namespace KonkeSmartDeviceHandler
             return false;
         }
 
-        public Task<Light> GetLightState(Light light)
+        public async Task<Light> GetLightState(Light light)
         {
-            throw new NotImplementedException();
+            return light;
         }
 
     }
