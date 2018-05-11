@@ -47,7 +47,7 @@ namespace HueBridge
         private void SyncLights()
         {
             var lights = grp.DatabaseInstance.GetCollection<Light>("lights");
-            var allLights = lights.FindAll()
+            var tasks = lights.FindAll()
                                   .AsParallel()
                                   .Select(l =>
                                   {
@@ -62,8 +62,16 @@ namespace HueBridge
                                       }
                                   })
                                   .ToArray();
-            Task.WaitAll(allLights);
-            lights.Update(allLights.Select(x => x.Result));
+            Task.WaitAll(tasks);
+            var updatedLights = tasks.Select(x => x.Result);
+            foreach (var l in lights.FindAll())
+            {
+                l.State = updatedLights.FirstOrDefault(x => x.UniqueId == l.UniqueId)?.State;
+                if (l.State != null)
+                {
+                    lights.Update(l);
+                }
+            }
         }
 
         #region IDisposable Support
