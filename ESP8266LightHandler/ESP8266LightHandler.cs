@@ -61,7 +61,7 @@ namespace HueBridge.Utilities
         // FLS-PP3 White = Dresden Elektronik FLS-PP lp LED light strip, white light segment
         // Classic A60 TW = Osram Lightify CLA60 Tunable White bulb (color temp. only)
         #endregion
-        public List<string> SupportedModels => new List<string> { "LST001", "LWB001" };
+        public List<string> SupportedModels => new List<string> { "LST001", "LWB001", "LWB010" };
         private static object mylock = new object();
 
         private static void DebugOutput(string msg)
@@ -102,7 +102,9 @@ namespace HueBridge.Utilities
             try
             {
                 var lights = await Task.WhenAll(checkLightTasks);
-                var ret = lights.Where(x => x != null).ToList();
+                var ret = lights.Where(x => x != null && x.Count > 0)
+                                .SelectMany(x => x)
+                                .ToList();
                 DebugOutput($"Scanning finished, found {ret.Count} devices");
                 return ret;
             }
@@ -135,7 +137,7 @@ namespace HueBridge.Utilities
 
             using (var client = new HttpClient())
             {
-                var lightstate_request_url = $"http://{light.IPAddress}/get?light=1";
+                var lightstate_request_url = $"http://{light.IPAddress}/get?light={GetLightId(light)}";
                 try
                 {
                     client.Timeout = TimeSpan.FromSeconds(2);
@@ -159,7 +161,7 @@ namespace HueBridge.Utilities
 
                 return light;
             }
-        } 
+        }
 
         public async Task<bool> SetLightState(Light light)
         {
@@ -167,7 +169,7 @@ namespace HueBridge.Utilities
             using (var client = new HttpClient())
             {
                 client.Timeout = TimeSpan.FromSeconds(2);
-                var light_request_url = $"http://{light.IPAddress}/set?light=1";
+                var light_request_url = $"http://{light.IPAddress}/set?light={GetLightId(light)}";
                 if (newState.Alert != "none")
                 {
                     light_request_url += $"&alert={newState.Alert}";
@@ -224,10 +226,10 @@ namespace HueBridge.Utilities
             }
         }
 
-        private async Task<Light> CheckAndAddLights(string ip)
+        private async Task<List<Light>> CheckAndAddLights(string ip)
         {
             DebugOutput($"Checking {ip}");
-
+            var ret = new List<Light>();
             var url = $"http://{ip}/detect";
             HttpClient client = new HttpClient();
             HttpResponseMessage response;
@@ -240,7 +242,7 @@ namespace HueBridge.Utilities
             catch (TaskCanceledException)
             {
                 // request time out
-                return null;
+                return ret;
             }
 
             if (response.IsSuccessStatusCode)
@@ -259,36 +261,54 @@ namespace HueBridge.Utilities
                     if (r.hue.Length > 0)
                     {
                         // found a new light
-                        var newLight = new Light()
+                        foreach (var i in Enumerable.Range(1, r.lights))
                         {
-                            CreateDate = DateTime.Now,
-                            IPAddress = ip,
-                            Type = "Extended color light",
-                            Name = $"{r.modelid}",
-                            ModelId = r.modelid,
-                            UniqueId = r.mac + "-01",
-                            ManufacturerName = "HomeMade",
-                            LuminaireUniqueId = "",
-                            Streaming = new StreamingCapability
+                            ret.Add(new Light()
                             {
-                                Renderer = false,
-                                Proxy = false
-                            },
-                            SWVersion = "66010400",
-                            State = new LightState
-                            {
-                                ColorMode = "xy",
-                                Reachable = true
-                            }
-                        };
-                        return newLight;
+                                CreateDate = DateTime.Now,
+                                IPAddress = ip,
+                                Type = "Extended color light",
+                                Name = $"{r.modelid}",
+                                ModelId = r.modelid,
+                                UniqueId = $"{r.mac}-{i:00}",
+                                ManufacturerName = "HomeMade",
+                                LuminaireUniqueId = "",
+                                Streaming = new StreamingCapability
+                                {
+                                    Renderer = false,
+                                    Proxy = false
+                                },
+                                SWVersion = "66010400",
+                                State = new LightState
+                                {
+                                    ColorMode = "xy",
+                                    Reachable = true
+                                }
+                            });
+                        }
+                        return ret;
                     }
                 }
                 catch (JsonReaderException)
                 {
                 }
             }
-            return null;
+            return ret;
+        }
+
+        private static int GetLightId(Light light)
+        {
+            int id;
+            try
+            {
+                id = Convert.ToInt32(light.UniqueId.Split('-').Last());
+            }
+            catch
+            {
+                id = 1;
+            }
+
+            return id;
         }
     }
 }
