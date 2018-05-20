@@ -58,17 +58,20 @@ namespace HueBridge
                                       }
                                       else
                                       {
+                                          Console.WriteLine($"Cannot find handler for {l.ModelId}");
                                           return null;
                                       }
                                   })
+                                  .Where(x => x != null)
                                   .ToArray();
             Task.WaitAll(tasks);
             var updatedLights = tasks.Select(x => x.Result);
             foreach (var l in lights.FindAll())
             {
-                l.State = updatedLights.FirstOrDefault(x => x.UniqueId == l.UniqueId)?.State;
-                if (l.State != null)
+                var updatedLight = updatedLights.FirstOrDefault(x => x.UniqueId == l.UniqueId);
+                if (updatedLight != null)
                 {
+                    l.State = updatedLight.State;
                     lights.Update(l);
                 }
             }
