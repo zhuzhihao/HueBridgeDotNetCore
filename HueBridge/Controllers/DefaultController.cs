@@ -20,13 +20,26 @@ namespace HueBridge.Controllers.Default
             _grp = grp;
         }
 
-        // POST: api
         [Route("api")]
         [HttpPost]
-        public IEnumerable<Result> Post([FromBody] Device content)
+        [Consumes("application/x-www-form-urlencoded")]
+        public IEnumerable<Result> CreateNewUserFromFrom([FromForm] Device content)
+        {
+            return CreateNewUser(content);
+        }
+
+        [Route("api")]
+        [HttpPost]
+        [Consumes("application/json")]
+        public IEnumerable<Result> CreateNewUserFromBody([FromBody] Device content)
+        {
+            return CreateNewUser(content);
+        }
+
+        private IEnumerable<Result> CreateNewUser(Device content)
         {
             Result ret = new Result();
-            if (content.Devicetype.Length > 0)
+            if (content.Devicetype?.Length > 0)
             {
                 // check for existing user in database
                 var db = _grp.DatabaseInstance;
@@ -125,10 +138,27 @@ namespace HueBridge.Controllers.Default
                 // request time out
             }
 
+            object sensors_dict = new Dictionary<string, string>();
+            var sensors_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/sensors";
+            try
+            {
+                response = await client.GetAsync(sensors_request_url);
+                if (response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    sensors_dict = JsonConvert.DeserializeObject(body);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // request time out
+            }
+
             ret["lights"] = lights_dict;
             ret["groups"] = groups_dict;
             ret["config"] = config_dict;
             ret["scenes"] = scenes_dict;
+            ret["sensors"] = sensors_dict;
             ret["rules"] = new Dictionary<string, string>();
             ret["resourcelinks"] = new Dictionary<string, string>();
             ret["schedules"] = new Dictionary<string, string>(); ;
