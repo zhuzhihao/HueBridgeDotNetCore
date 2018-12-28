@@ -71,7 +71,14 @@ namespace HueBridge.ApplicationMain
                             foreach (var r in responses)
                             {
                                 var bytes = Encoding.UTF8.GetBytes(r);
-                                await udpClient.SendAsync(bytes, bytes.Length, hostname: udpMsg.RemoteAddress, port: Convert.ToInt32(udpMsg.RemotePort));
+                                try
+                                {
+                                    await udpClient.SendAsync(bytes, bytes.Length, hostname: udpMsg.RemoteAddress, port: Convert.ToInt32(udpMsg.RemotePort));
+                                }
+                                catch (SocketException ex)
+                                {
+                                    Console.WriteLine($"SocketException:{ex.Message}");
+                                }
                             }
                         }
                     },

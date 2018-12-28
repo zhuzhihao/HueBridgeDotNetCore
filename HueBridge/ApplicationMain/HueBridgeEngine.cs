@@ -48,22 +48,22 @@ namespace HueBridge
         {
             var lights = grp.DatabaseInstance.GetCollection<Light>("lights");
             var tasks = lights.FindAll()
-                                  .AsParallel()
-                                  .Select(l =>
+                              .AsParallel()
+                              .Select(l =>
+                              {
+                                  var handler = grp.LightHandlers.Where(x => x.SupportedModels.Contains(l.ModelId)).FirstOrDefault();
+                                  if (handler != null)
                                   {
-                                      var handler = grp.LightHandlers.Where(x => x.SupportedModels.Contains(l.ModelId)).FirstOrDefault();
-                                      if (handler != null)
-                                      {
-                                          return handler.GetLightState(l);
-                                      }
-                                      else
-                                      {
-                                          Console.WriteLine($"Cannot find handler for {l.ModelId}");
-                                          return null;
-                                      }
-                                  })
-                                  .Where(x => x != null)
-                                  .ToArray();
+                                      return handler.GetLightState(l);
+                                  }
+                                  else
+                                  {
+                                      Console.WriteLine($"Cannot find handler for {l.ModelId}");
+                                      return null;
+                                  }
+                              })
+                              .Where(x => x != null)
+                              .ToArray();
             Task.WaitAll(tasks);
             var updatedLights = tasks.Select(x => x.Result);
             foreach (var l in lights.FindAll())
