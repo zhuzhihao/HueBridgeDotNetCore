@@ -163,10 +163,10 @@ namespace KonkeSmartDeviceHandler
             var meta = JsonConvert.DeserializeObject<Dictionary<string, string>>(light.MetaData);
             if (meta == null) return false;
             // build request string
-            string msg, action;
+            var msgList = new List<string>();
             try
             {
-                string device;
+                string device, action;
                 switch (meta["Model"])
                 {
                     case "KRelay":
@@ -179,7 +179,14 @@ namespace KonkeSmartDeviceHandler
                         return false;
                 }
                 action = light.State.On ? "open" : "close";
-                msg = $"lan_phone%{meta["PhysicalAddress"]}%{meta["Password"]}%{action}%{device}";
+                msgList.Add($"lan_phone%{meta["PhysicalAddress"]}%{meta["Password"]}%{action}%{device}");
+
+                if (device == "kbulb" && action == "open")
+                {
+                    // brightness and color temperature
+                    msgList.Add($"lan_phone%{meta["PhysicalAddress"]}%{meta["Password"]}%set#lum#{Math.Floor(light.State.Bri * 100D / 255)}%{device}");
+                    msgList.Add($"lan_phone%{meta["PhysicalAddress"]}%{meta["Password"]}%set#ctp#{Math.Floor(1000000D / light.State.CT)}%{device}");
+                }
             }
             catch (KeyNotFoundException ex)
             {
@@ -189,35 +196,39 @@ namespace KonkeSmartDeviceHandler
 
             using (var udp = new UdpClient())
             {
-                try
+                foreach (var msg in msgList)
                 {
-                    var ep = new IPEndPoint(IPAddress.Parse(light.IPAddress), KonkePort);
-                    var encrypted = AES.EncryptMessage(msg);
-                    await udp.SendAsync(encrypted, encrypted.Length, ep);
-                    var udpReceiveTask = udp.ReceiveAsync();
-                    if (await Task.WhenAny(udpReceiveTask, Task.Delay(TimeSpan.FromSeconds(5))) != udpReceiveTask)
+                    DebugOutput(msg);
+                    try
                     {
-                        // no message received in 5 seconds
-                        DebugOutput($"Wait for device {light.IPAddress} response timeout");
+                        var ep = new IPEndPoint(IPAddress.Parse(light.IPAddress), KonkePort);
+                        var encrypted = AES.EncryptMessage(msg);
+                        await udp.SendAsync(encrypted, encrypted.Length, ep);
+                        var udpReceiveTask = udp.ReceiveAsync();
+                        if (await Task.WhenAny(udpReceiveTask, Task.Delay(TimeSpan.FromSeconds(5))) != udpReceiveTask)
+                        {
+                            // no message received in 5 seconds
+                            DebugOutput($"Wait for device {light.IPAddress} response timeout");
+                            return false;
+                        }
+
+                        var result = udpReceiveTask.Result;
+                        // parse response
+                        var respData = AES.DecryptMessage(result.Buffer).Split('%');
+                        if (respData[3].StartsWith(msg.Split('%')[3]))
+                        {
+                            continue;
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugOutput($"Cannot send command to {light.IPAddress}: {ex.Message}");
                         return false;
                     }
-
-                    var result = udpReceiveTask.Result;
-                    // parse response
-                    var respData = AES.DecryptMessage(result.Buffer).Split('%');
-                    if (respData[3].StartsWith(action))
-                    {
-                        return true;
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    DebugOutput($"Cannot send command to {light.IPAddress}: {ex.Message}");
-                    return false;
                 }
             }
-            return false;
+            return true;
         }
 
         public async Task<Light> GetLightState(Light light)

@@ -15,7 +15,7 @@ namespace KonkeSmartDeviceHandler
         {
             using (var aes = Aes.Create("AesCryptoServiceProvider"))
             {
-                aes.Key = Encoding.UTF8.GetBytes("fdsl;mewrjope456fds4fbvfnjwaugfo");
+                aes.Key = Key;
                 aes.Mode = CipherMode.ECB;
                 aes.IV = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 aes.Padding = PaddingMode.Zeros;
@@ -30,7 +30,7 @@ namespace KonkeSmartDeviceHandler
         {
             using (var aes = Aes.Create("AesCryptoServiceProvider"))
             {
-                aes.Key = Encoding.UTF8.GetBytes("fdsl;mewrjope456fds4fbvfnjwaugfo");
+                aes.Key = Key;
                 aes.Mode = CipherMode.ECB;
                 aes.IV = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 aes.Padding = PaddingMode.Zeros;
