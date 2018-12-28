@@ -70,6 +70,8 @@ namespace HueBridge.Controllers
             config.PortalConnection = "";
             config.PortalServices = false;
             config.PortalState = "none";
+            config.BridgeId = $"{config.MAC.Substring(0, 6)}FFFE{config.MAC.Substring(6)}";
+            config.ModelId = "BSB002";
 
             return Json(config);
         }
