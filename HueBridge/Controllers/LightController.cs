@@ -67,6 +67,7 @@ namespace HueBridge.Controllers
                 try
                 {
                     var l = await Task.WhenAll(tasks);
+                    // each light handler returns a list of light found, put all lights in a flat list "expanded"
                     var expanded = new List<Light>();
                     foreach (var ll in l)
                     {
@@ -297,14 +298,21 @@ namespace HueBridge.Controllers
                     }
                     else
                     {
-                        pp.Find(x => x.Name == p.Name).SetValue(light.State, pv);
-                        ret.Add(new Dictionary<string, object>
+                        try
                         {
-                            ["success"] = new Dictionary<string, object>
+                            pp.Find(x => x.Name == p.Name).SetValue(light.State, pv);
+                            ret.Add(new Dictionary<string, object>
                             {
-                                [$"/lights/{id}/state/{p.Name.ToLower()}"] = pv
-                            }
-                        });
+                                ["success"] = new Dictionary<string, object>
+                                {
+                                    [$"/lights/{id}/state/{p.Name.ToLower()}"] = pv
+                                }
+                            });
+                        }
+                        catch
+                        {
+                            Console.WriteLine($"Cannot set light state: {p.Name}");
+                        }
                     }
 
                     // colormode priority system: xy > ct > hs

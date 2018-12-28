@@ -6,6 +6,8 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore;
 
 namespace HueBridge
 {
@@ -19,7 +21,7 @@ namespace HueBridge
                     options.Listen(IPAddress.Any, 80);
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
+               // .UseIISIntegration()
                 .UseStartup<Startup>()
                 .UseApplicationInsights()
                 .Build();

@@ -49,6 +49,9 @@ namespace HueBridge.Models
         public string ColorMode { get; set; } = "";
                                                 // Values are “hs” for Hue and Saturation, “xy” for XY and “ct” for Color Temperature. This parameter is only present when the light supports at least one of the values.
         public bool Reachable { get; set; }     // Indicates if a light can be reached by the bridge.
+
+        [JsonIgnore]
+        public uint TransitionTime { get; set; }
     }
 
     public class StreamingCapability

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -23,8 +24,18 @@ namespace HueBridge.Controllers.Default
         [Route("api")]
         [HttpPost]
         [Consumes("application/x-www-form-urlencoded")]
-        public IEnumerable<Result> CreateNewUserFromFrom([FromForm] Device content)
+        public async Task<IEnumerable<Result>> CreateNewUserFromForm([FromForm] Device content)
         {
+            if (content.Devicetype == null)
+            {
+                var ms = new MemoryStream();
+                await Request.Body.CopyToAsync(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                var body = await new StreamReader(ms).ReadToEndAsync();
+
+                content = JsonConvert.DeserializeObject<Device>(body);
+            }
+
             return CreateNewUser(content);
         }
 

@@ -16,3 +16,5 @@
 /HueBridge/bin/Release/netcoreapp2.0
 /KonkeSmartDeviceHandler/obj
 /DaylightSensorHandler/obj
+/HueBridge/bin/Debug/netcoreapp2.2
+/.vs/HueBridge/DesignTimeBuild

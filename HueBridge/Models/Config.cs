@@ -26,6 +26,12 @@ namespace HueBridge.Models
         public bool PortalServices { get; set; }
         public string PortalConnection { get; set; }
         public string PortalState { get; set; }
+        public string BridgeId { get; set; }
+        public string ReplacesBridgeId { get; set; }
+        public bool FactoryNew { get; set; }
+        public string DatastoreVersion { get; set; }
+        public string StarterKitId { get; set; }
+        public string ModelId { get; set; }
     }
 
     public class WhiteListItem
