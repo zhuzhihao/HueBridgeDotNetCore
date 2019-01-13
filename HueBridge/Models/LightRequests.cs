@@ -21,7 +21,7 @@ namespace HueBridge.Models
         public uint? CT { get; set; }
         public string Alert { get; set; }
         public string Effect { get; set; }
-        public int? TransitionTime { get; set; }
+        public uint? TransitionTime { get; set; }
         public int? Bri_inc { get; set; }
         public int? Sat_inc { get; set; }
         public int? Hue_inc { get; set; }

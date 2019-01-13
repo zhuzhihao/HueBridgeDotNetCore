@@ -14,11 +14,21 @@ namespace HueBridge.Controllers.Default
     [Produces("application/json")]
     public class DefaultController : Controller
     {
+        private static HttpClient _client = new HttpClient();
         private IGlobalResourceProvider _grp;
 
         public DefaultController(IGlobalResourceProvider grp)
         {
             _grp = grp;
+
+            try
+            {
+                _client.Timeout = TimeSpan.FromMilliseconds(5000);
+            }
+            catch (InvalidOperationException ex)
+            {
+                
+            }
         }
 
         [Route("api")]
@@ -88,9 +98,7 @@ namespace HueBridge.Controllers.Default
             {
                 return Json(_grp.AuthenticatorInstance.ErrorResponse(Request.Path.ToString()));
             }
-            HttpClient client = new HttpClient();
             HttpResponseMessage response;
-            client.Timeout = TimeSpan.FromMilliseconds(5000);
 
             var ret = new Dictionary<string, object>();
 
@@ -105,7 +113,7 @@ namespace HueBridge.Controllers.Default
             var groups_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/groups";
             try
             {
-                response = await client.GetAsync(groups_request_url);
+                response = await _client.GetAsync(groups_request_url);
                 if (response.IsSuccessStatusCode)
                 {
                     var body = await response.Content.ReadAsStringAsync();
@@ -121,7 +129,7 @@ namespace HueBridge.Controllers.Default
             var config_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/config";
             try
             {
-                response = await client.GetAsync(config_request_url);
+                response = await _client.GetAsync(config_request_url);
                 if (response.IsSuccessStatusCode)
                 {
                     var body = await response.Content.ReadAsStringAsync();
@@ -137,7 +145,7 @@ namespace HueBridge.Controllers.Default
             var scenes_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/scenes";
             try
             {
-                response = await client.GetAsync(scenes_request_url);
+                response = await _client.GetAsync(scenes_request_url);
                 if (response.IsSuccessStatusCode)
                 {
                     var body = await response.Content.ReadAsStringAsync();
@@ -153,7 +161,7 @@ namespace HueBridge.Controllers.Default
             var sensors_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/sensors";
             try
             {
-                response = await client.GetAsync(sensors_request_url);
+                response = await _client.GetAsync(sensors_request_url);
                 if (response.IsSuccessStatusCode)
                 {
                     var body = await response.Content.ReadAsStringAsync();

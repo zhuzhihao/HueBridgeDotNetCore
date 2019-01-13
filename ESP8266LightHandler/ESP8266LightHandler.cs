@@ -63,6 +63,12 @@ namespace HueBridge.Utilities
         #endregion
         public List<string> SupportedModels => new List<string> { "LST001", "LWB001", "LWB010" };
         private static object mylock = new object();
+        private static HttpClient _client = new HttpClient();
+
+        public ESP8266LightHandler()
+        {
+            _client.Timeout = TimeSpan.FromMilliseconds(2000);
+        }
 
         private static void DebugOutput(string msg)
         {
@@ -135,73 +141,65 @@ namespace HueBridge.Utilities
         {
             DebugOutput($"Requesting light state: {light.IPAddress}");
 
-            using (var client = new HttpClient())
+            var lightstate_request_url = $"http://{light.IPAddress}/get?light={GetLightId(light)}";
+            try
             {
-                var lightstate_request_url = $"http://{light.IPAddress}/get?light={GetLightId(light)}";
-                try
-                {
-                    client.Timeout = TimeSpan.FromSeconds(2);
-                    var response = client.GetAsync(lightstate_request_url);
-                    var responseText = await response.Result.Content.ReadAsStringAsync();
-                    var newState = JsonConvert.DeserializeObject<LightStateResponse>(responseText);
+                var response = _client.GetAsync(lightstate_request_url);
+                var responseText = await response.Result.Content.ReadAsStringAsync();
+                var newState = JsonConvert.DeserializeObject<LightStateResponse>(responseText);
 
-                    light.State.Reachable = true;
-                    light.State.On = newState.On ?? light.State.On;
-                    light.State.Bri = newState.Bri ?? light.State.Bri;
-                    light.State.XY = newState.XY ?? light.State.XY;
-                    light.State.CT = newState.CT ?? light.State.CT;
-                    light.State.Sat = newState.Sat ?? light.State.Sat;
-                    light.State.Hue = newState.Hue ?? light.State.Hue;
-                    light.State.ColorMode = newState.ColorMode ?? light.State.ColorMode;
-                }
-                catch
-                {
-                    light.State.Reachable = false;
-                }
-
-                return light;
+                light.State.Reachable = true;
+                light.State.On = newState.On ?? light.State.On;
+                light.State.Bri = newState.Bri ?? light.State.Bri;
+                light.State.XY = newState.XY ?? light.State.XY;
+                light.State.CT = newState.CT ?? light.State.CT;
+                light.State.Sat = newState.Sat ?? light.State.Sat;
+                light.State.Hue = newState.Hue ?? light.State.Hue;
+                light.State.ColorMode = newState.ColorMode ?? light.State.ColorMode;
             }
+            catch
+            {
+                light.State.Reachable = false;
+            }
+
+            return light;
         }
 
         public async Task<bool> SetLightState(Light light)
         {
             var newState = light.State;
-            using (var client = new HttpClient())
+            var light_request_url = $"http://{light.IPAddress}/set?light={GetLightId(light)}";
+            if (newState.Alert != "none")
             {
-                client.Timeout = TimeSpan.FromSeconds(2);
-                var light_request_url = $"http://{light.IPAddress}/set?light={GetLightId(light)}";
-                if (newState.Alert != "none")
+                light_request_url += $"&alert={newState.Alert}";
+                newState.Alert = "none";
+            }
+            else
+            {
+                light_request_url += $"&colormode={light.State.ColorMode}&on={light.State.On}";
+                light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
+                switch (light.State.ColorMode)
                 {
-                    light_request_url += $"&alert={newState.Alert}";
-                    newState.Alert = "none";
+                    case "xy":
+                        light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
+                        break;
+                    case "ct":
+                        light_request_url += $"&ct={light.State.CT}";
+                        break;
+                    case "hs":
+                        light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
+                        break;
                 }
-                else
-                {
-                    light_request_url += $"&colormode={light.State.ColorMode}&on={light.State.On}";
-                    light_request_url += light.State.On ? $"&bri={light.State.Bri}" : "";
-                    switch (light.State.ColorMode)
-                    {
-                        case "xy":
-                            light_request_url += $"&x={light.State.XY[0]}&y={light.State.XY[1]}";
-                            break;
-                        case "ct":
-                            light_request_url += $"&ct={light.State.CT}";
-                            break;
-                        case "hs":
-                            light_request_url += $"&hue={light.State.Hue}&sat={light.State.Sat}";
-                            break;
-                    }
-                }
+            }
 
-                try
-                {
-                    var response = await client.GetAsync(light_request_url.ToLower());
-                    return response.IsSuccessStatusCode;
-                }
-                catch
-                {
-                    return false;
-                }
+            try
+            {
+                var response = await _client.GetAsync(light_request_url.ToLower());
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -231,13 +229,11 @@ namespace HueBridge.Utilities
             DebugOutput($"Checking {ip}");
             var ret = new List<Light>();
             var url = $"http://{ip}/detect";
-            HttpClient client = new HttpClient();
             HttpResponseMessage response;
-            client.Timeout = TimeSpan.FromMilliseconds(2000);
 
             try
             {
-                response = await client.GetAsync(url);
+                response = await _client.GetAsync(url);
             }
             catch (TaskCanceledException)
             {

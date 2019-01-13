@@ -16,5 +16,6 @@ namespace HueBridge.Models
         public uint CT { get; set; }
         public string Alert { get; set; } = "none";
         public string ColorMode { get; set; } = "";
+        public uint TransitionTime { get; set; }
     }
 }

@@ -21,6 +21,7 @@ namespace HueBridge.Controllers
     public class GroupController : Controller
     {
         private IGlobalResourceProvider _grp;
+        private static HttpClient _client = new HttpClient();
 
         public GroupController(
             IGlobalResourceProvider grp)
@@ -214,10 +215,9 @@ namespace HueBridge.Controllers
                 settings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() };
                 foreach (var l in newLightStates)
                 {
-                    HttpClient client = new HttpClient();
                     var lightstate_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/lights/{l.Key}/state";
                     var content = new StringContent(JsonConvert.SerializeObject(l.Value, settings), Encoding.UTF8, "application/json");
-                    tasks.Add(client.PutAsync(lightstate_request_url, content));
+                    tasks.Add(_client.PutAsync(lightstate_request_url, content));
                 }
 
                 try
@@ -271,15 +271,23 @@ namespace HueBridge.Controllers
                         }
                         else
                         {
-                            pp.Find(x => x.Name == p.Name).SetValue(group.Action, pv);
-                            ppp.Find(x => x.Name == p.Name).SetValue(req, pv);
-                            ret.Add(new Dictionary<string, object>
+                            try
                             {
-                                ["success"] = new Dictionary<string, object>
+                                pp.Find(x => x.Name == p.Name).SetValue(group.Action, pv);
+                                ppp.Find(x => x.Name == p.Name).SetValue(req, pv);
+                                ret.Add(new Dictionary<string, object>
                                 {
-                                    [$"/groups/{id}/state/{p.Name.ToLower()}"] = pv
-                                }
-                            });
+                                    ["success"] = new Dictionary<string, object>
+                                    {
+                                        [$"/groups/{id}/state/{p.Name.ToLower()}"] = pv
+                                    }
+                                });
+                            }
+                            catch
+                            {
+                                Console.WriteLine($"Cannot set group state: {p.Name}");
+                            }
+
                         }
 
                         // colormode priority system: xy > ct > hs
@@ -315,10 +323,9 @@ namespace HueBridge.Controllers
                 settings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() };
                 foreach (var l in group.Lights)
                 {
-                    HttpClient client = new HttpClient();
                     var lightstate_request_url = $"{Request.Scheme}://{Request.Host.ToString()}/api/{user}/lights/{l}/state";
                     var content = new StringContent(JsonConvert.SerializeObject(req, settings), Encoding.UTF8, "application/json");
-                    tasks.Add(client.PutAsync(lightstate_request_url, content));
+                    tasks.Add(_client.PutAsync(lightstate_request_url, content));
                 }
             }
             groups.Update(group);
