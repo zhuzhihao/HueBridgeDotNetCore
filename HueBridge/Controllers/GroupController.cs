@@ -20,13 +20,15 @@ namespace HueBridge.Controllers
     [Route("api/{user?}/groups")]
     public class GroupController : Controller
     {
-        private IGlobalResourceProvider _grp;
-        private static HttpClient _client = new HttpClient();
+        private readonly IGlobalResourceProvider _grp;
+        private HttpClient _client;
 
         public GroupController(
-            IGlobalResourceProvider grp)
+            IGlobalResourceProvider grp,
+            IHttpClientFactory clientFactory)
         {
             _grp = grp;
+            _client = clientFactory.CreateClient();
         }
 
         [HttpGet]

@@ -14,13 +14,14 @@ namespace HueBridge.Controllers.Default
     [Produces("application/json")]
     public class DefaultController : Controller
     {
-        private static HttpClient _client = new HttpClient();
-        private IGlobalResourceProvider _grp;
+        private HttpClient _client;
+        private readonly IGlobalResourceProvider _grp;
 
-        public DefaultController(IGlobalResourceProvider grp)
+        public DefaultController(IGlobalResourceProvider grp,
+                                 IHttpClientFactory clientFactory)
         {
             _grp = grp;
-
+            _client = clientFactory.CreateClient();
             try
             {
                 _client.Timeout = TimeSpan.FromMilliseconds(5000);

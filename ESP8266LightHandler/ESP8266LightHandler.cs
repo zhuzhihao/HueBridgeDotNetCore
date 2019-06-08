@@ -63,10 +63,12 @@ namespace HueBridge.Utilities
         #endregion
         public List<string> SupportedModels => new List<string> { "LST001", "LWB001", "LWB010" };
         private static object mylock = new object();
-        private static HttpClient _client = new HttpClient();
+        private HttpClient _client;
 
-        public ESP8266LightHandler()
+        [ImportingConstructor]
+        public ESP8266LightHandler(IHttpClientFactory clientFactory)
         {
+            _client = clientFactory.CreateClient();
             _client.Timeout = TimeSpan.FromMilliseconds(2000);
         }
 

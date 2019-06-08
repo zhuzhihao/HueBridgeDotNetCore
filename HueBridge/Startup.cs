@@ -39,6 +39,7 @@ namespace HueBridge
             // Add framework services
             services.AddMvc(options => { options.OutputFormatters.Add(new XmlSerializerOutputFormatter()); })
                 .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver { NamingStrategy = new Utilities.LowercaseNamingStrategy() });
+            services.AddHttpClient();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
