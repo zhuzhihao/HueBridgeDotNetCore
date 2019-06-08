@@ -64,8 +64,8 @@ namespace HueBridge.Controllers
                     };
                 }
             }
-            config.SWVersion = "1.0.0 revision 2";
-            config.APIVersion = "1.19.0";
+            config.SWVersion = "1809121051";
+            config.APIVersion = "1.24.0";
             config.LinkButton = true;
             config.PortalConnection = "";
             config.PortalServices = false;
