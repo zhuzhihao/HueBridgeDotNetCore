@@ -1,4 +1,4 @@
-﻿using HueBridge.Models;
+using HueBridge.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

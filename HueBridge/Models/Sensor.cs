@@ -1,4 +1,4 @@
-﻿using LiteDB;
+using LiteDB;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 

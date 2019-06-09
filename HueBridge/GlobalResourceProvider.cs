@@ -1,4 +1,4 @@
-﻿using HueBridge.Utilities;
+using HueBridge.Utilities;
 using LiteDB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

@@ -1,4 +1,4 @@
-﻿using HueBridge;
+using HueBridge;
 using HueBridge.Models;
 using System;
 using System.Linq;

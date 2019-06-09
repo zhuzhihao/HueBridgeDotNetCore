@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
 using SocketLite.Services;
 using System;
 using System.Collections.Generic;
